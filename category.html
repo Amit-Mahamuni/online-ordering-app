@@ -1,0 +1,654 @@
+<ons-page id="category" style="background: #f0e9dd !important;">
+
+
+	<style>
+		.fa-stack[data-count]:after {
+			position: absolute;
+			right: 0%;
+			top: 0%;
+			content: attr(data-count);
+			font-size: 70%;
+			padding: .2em;
+			border-radius: 999px;
+			line-height: .75em;
+			color: white;
+			color: #607196;
+			text-align: center;
+			min-width: 2em;
+			background: white;
+			border-style: solid;
+		}
+
+		.viewAllCat .list-group .list-group-item,
+		.viewAllCat ul li {
+			padding: 5px 0px !important;
+			border-width: 0px !important;
+			border: 0px solid white !important;
+			background: transparent !important;
+		}
+
+		.fa-circle {
+			color: #607196;
+		}
+
+		.red-cart {
+			color: var(--main-5);
+		}
+
+		.tabbar__item {
+			padding: 1px 20px;
+			font-weight: bold;
+		}
+
+		.MenuList img,
+		.MenuDrinkList img,
+		.MenuFoodList img,
+		.RImg {
+			width: 140px !important;
+			height: 140px !important;
+			border-radius: 50% !important;
+		}
+
+		.MenuList .figure,
+		.MenuDrinkList .figure,
+		.MenuFoodList .figure {
+			min-width: max-content;
+			margin: 10px;
+		}
+
+		.MenuList .figure-caption,
+		.MenuDrinkList .figure-caption,
+		.MenuFoodList .figure-caption {
+			color: #131414;
+			font-size: 16px;
+			font-weight: 600;
+			max-width: 120px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			margin: auto;
+		}
+
+		.Menutabar .nav-tabs .nav-link.active {
+			color: #EAC278;
+			background-color: #fff;
+			border: 3px solid #EAC278;
+			border-width: 0px 0px 3px 0px;
+		}
+
+		.Menutabar .nav-tabs .nav-link {
+			color: #000;
+		}
+
+		.toast {
+			opacity: 1 !important;
+			color: #131414 !important;
+		}
+	</style>
+	<script>
+		ons.getScriptPage().onShow = function () {
+			// sessionCatApp();
+			// if (localStorage.getItem("card_enable") != 1)
+			// document.getElementById("finishAndPay").innerText = "Next";
+		}
+
+		// function sessionCatApp() {
+		// 	$.ajax({
+		// 		url: BASE_URL + "/sessionCartApp",
+		// 		type: "POST",
+		// 		data: 'my-tok=' + localStorage.getItem('myTOK'),
+
+		// 		crossDomain: true,
+		// 		success: function (response) {
+		// 			localStorage.setItem("myTOK", response.split('THISTOKEN')[1]);
+		// 			response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+		// 			if (response.refreshCoupon == 1)
+		// 				ons.notification.alert('Please apply your coupon again');
+		// 			response.GrandTotal = response.GrandTotal || 0
+
+		// 			$('#headerTotal').html("£" + parseFloat(response.GrandTotal).toFixed(2));
+		// 			$('#setCartCount').attr("data-count", response.totQuat);
+
+		// 		}
+		// 	});
+
+
+		// }
+		ons.getScriptPage().onInit = function () {
+			// Set up page's content or anything else
+			// this.querySelector('ons-toolbar .center').innerHTML = 'Place order';
+
+			getCategory();
+			//console.log("getcat");
+		};
+		function showModal() {
+			var modal = document.querySelector('#categoryModal');
+			modal.show();
+
+		}
+		function confirmAge(prod, portion, type) {
+			ons.notification.confirm('Please confirm you are over 18', { "buttonLables": ["No", "Yes"] })
+				.then(function (input) {
+					if (input == 1) {
+						if (type == 1)
+							startDeal(portion);
+						else
+							addToCart(prod, portion);
+					}
+				});
+
+		}
+		currCat = 0;
+
+		function gotoProductList(group, productList, active, catDescription, Path) {
+			document.querySelector('#navigator').bringPageTop('categoryAll.html', { data: { groupv: group, productListv: productList, activev: active, catDescriptionv: catDescription, Pathv: Path } });
+		}
+
+		function getProducts(group, productList, active, catDescription, Path) {
+
+			// path is '0' then go to all product list
+
+			if (currCat == group)
+				return;
+			currCat = group;
+			$('.aCategoryItem').each(function () {
+				if ($(this).attr("data-cat") != group) {
+					$(this).removeClass("expanded");
+				}
+
+			});
+			var prodList = document.querySelector('#cat' + group);
+			//	//console.log(prodList);
+			prodList.innerHTML = '<div style="margin: 20px auto; width: 320px;"><p>Loading stuff...</p><ons-progress-circular value="10"></ons-progress-circular></div>';
+
+			$.ajax({
+				url: BASE_URL + "/getProducts2",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'category_id=' + group,
+				crossDomain: true,
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+					allProducts = '<ons-list style="width:100%;padding-top:10px" class="categoryList">';
+					if (catDescription != "") {
+						allProducts += '<ons-row style="padding:5px;color:black">';
+
+						allProducts += catDescription;
+						allProducts += '</ons-row>';
+
+					}
+					/*data.forEach(name1 => {
+						allProducts += '<ons-list-item onclick="addToCart('+name1.Id+','+name1.PortionIDcart+')">'+name1.Name+'</ons-list-item>'
+					
+					});*/
+					i = 0;
+					if (Array.isArray(data)) {
+
+						$("#CatProList").html("");
+						$("#AllCatName").html("Category (" + data.length + ")");
+
+						data.forEach(name1 => {
+
+							if (i % 2 == 0) {
+								allProducts += '<ons-row>';
+							}
+							if (localStorage.getItem("two_tone") == 1) {
+								if (i % 2 == 0) {
+									//	buttonStyle = "background-color:#FF7B9C";
+									buttonStyle = "background-color:var(--main-3) !important;color:var(--main-4) !important";
+
+
+								} else {
+									//	buttonStyle = "background-color:#BABFD1";
+									buttonStyle = "background-color:var(--main-4) !important;color:var(--main-3) !important";
+
+								}
+							} else {
+
+								buttonStyle = "background-color:var(--main-4) !important;color:var(--main-3) !important";
+							}
+							//buttonStyle=
+
+							if (name1.cat_deals != "0") {
+								//console.log("hear");
+
+								clickFunction = "startDeal(" + name1.PortionIDcart + ")";
+
+							} else {
+
+								clickFunction = "addToCart(" + name1.Id + ',' + name1.PortionIDcart + ")";
+							}
+							if (name1.restrict_product != "0") {
+								if (name1.cat_deals != "0")
+									clickFunction = "confirmAge(" + name1.Id + ',' + name1.PortionIDcart + ",1)";
+								else
+									clickFunction = "confirmAge(" + name1.Id + ',' + name1.PortionIDcart + ",0)";
+
+
+							}
+							if ((name1.in_stock > 0) || name1.in_stock == 'IN STOCK') {
+								displayIcon = '<ons-icon  onclick="' + clickFunction + '" style="color:var(--main-2);font-size: 36px;" icon="fa-plus-circle"></ons-icon>';
+
+
+							} else {
+								clickFunction = 'ons.notification.alert(\'Out of stock\');';
+								displayIcon = '<ons-icon  onclick="' + clickFunction + '" style="color:red;font-size: 36px;" icon="fa-times"></ons-icon>';
+							}
+							if (name1.old_price != 0)
+								priceDisplay = '<span style="text-decoration: line-through;">' + '£' + parseFloat(name1.old_price).toFixed(2) + '</span>' + '£' + parseFloat(name1.price).toFixed(2) + displayIcon;
+							else
+								priceDisplay = '£' + parseFloat(name1.price).toFixed(2) + displayIcon;
+
+							//console.log(clickFunction);
+							if (name1.image != "")
+								imgurl = 'https://live.bb01.net/back/uploads/' + name1.image;
+							else
+								imgurl = localStorage.getItem("logo_url");
+							//			allProducts += ' <ons-col style="text-align:center" width="50%"><img style="width:125px;height:125px;border: 2px #dbdbdb solid;padding: 5px;" src="'+imgurl+'"><p style="margin-top:-133px;margin-left:76px;color:black"><ons-button class="productButton" style="'+buttonStyle+'"  onclick="'+clickFunction+'">'+name1.Name+' '+name1.portionname+'</ons-button></p><p style="margin-top:56px"><ons-button class="productButton" style=";max-width:50%;'+buttonStyle+'"  onclick="'+clickFunction+'"> + £'+parseFloat(name1.price).toFixed(2) + '</ons-button></p><p><ons-icon  onclick="'+clickFunction+'" style="color:#BABFD1;font-size: 36px;" icon="fa-plus-circle"></ons-icon></p>					</ons-col>';
+							if (localStorage.getItem("image_disable") == 1) {
+								allProducts += ' <ons-col style="text-align:center;position:relative" width="50%"><ons-icon style="color: black;font-size: 27px;top: 112px;position: absolute;" icon="fa-search"></ons-icon><img onclick="showDescModal(this)" data-name="' + name1.Name + ' ' + name1.portionname + '" data-allergens="' + name1.allergens + '" data-description="' + name1.description + '" style="width:125px;height:125px;border: 2px #dbdbdb solid;padding: 5px;" src="' + imgurl + '"><p style="margin-top:-20px"><ons-button class="productButton" style=";max-width:50%;' + buttonStyle + '"  onclick="' + clickFunction + '"> + £' + parseFloat(name1.price).toFixed(2) + '</ons-button></p><p style="color:black">' + name1.Name + ' ' + name1.portionname + '</p><p style="margin-top:-18px">' + displayIcon + '</p>					</ons-col>';
+							} else {
+								allProducts += '<ons-list-item style="border-top:1px dotted;margin-top:1px;background:white;color:black"><ons-icon onclick="showDescModal(this)" data-name="' + name1.Name + ' ' + name1.portionname + '" data-allergens="' + name1.allergens + '" data-description="' + name1.description + '"  src="' + imgurl + '" icon="fa-search"></ons-icon>' + name1.Name + ' ' + name1.portionname + '<br>' + name1.description + '<div class="right">' + priceDisplay + '</div></ons-list-item>';
+							}
+							if (i % 2 != 0) {
+								allProducts += '</ons-row>';
+							}
+							i++;
+
+
+							//Amit code
+							if (Path == 0) {
+								$("#CatProList").append(
+									"<div class='col-6'>" +
+									"<div class='card text-center p-2'>" +
+									"<img src='" + imgurl + "' alt='Card image cap' class='card-img-top proImg m-auto' onclick='loadPage('productDetail.html')'>" +
+									"<div class='card-body p-1'>" +
+									"<h5 class='card-title' style='font-size: 16px;font-weight: 600;'>" + name1.Name + "</h5>" +
+									"<span class='card-text pr-2' style='font-size: 16px;font-weight: 600;'>£" + parseFloat(name1.price).toFixed(2) + "</span>" +
+									"<button class='btn btn-primary' style = 'background: black;padding: 5px 12px;border-radius: 8px; border:1px solid black;' onclick=' " + clickFunction + "'>" +
+									"<i class='fas fa-plus'></i></button > " +
+									"</div>" +
+									"</div>" +
+									"</div>"
+								)
+							}
+
+							
+
+						});
+					}
+
+					allProducts += '</ons-list>';
+					prodList.innerHTML = "";
+					prodList.appendChild(ons.createElement(allProducts));
+
+
+					//Amit code
+					if (Path == 0) {
+						loadPage('categoryAll.html')
+					}
+
+
+				}
+			});
+
+
+		}
+
+		function startDeal(event1) {
+			mynav.bringPageTop('meal-deal.html', {
+				data: {
+					getProd: event1,
+
+				}
+			});
+		}
+
+		function addToCart(product_id, portion_id) {
+			showModal();
+			var formData = {
+				product_id: product_id,
+				portion_id: portion_id,
+				'my-tok': localStorage.getItem('myTOK'),
+			};
+			$.ajax({
+				url: BASE_URL + "/addToCart",
+				type: "POST",
+
+				crossDomain: true,
+				data: formData,
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+					document.querySelector('#categoryModal').hide();
+
+					if (data !== "FAILED") {
+						if (data == "LOWSTOCKSLOT") {
+							//  $("#postcode_popup").modal('toggle');
+							ons.notification.alert("No more pizzas for this time slot, please try another slot");
+							return;
+						}
+
+						if (data == "LOWSTOCK") {
+							//  $("#postcode_popup").modal('toggle');
+							ons.notification.alert("Low stock");
+							return;
+						}
+
+						else if (data['do'] == "showTag") {
+							if (data['sell'] != '')
+								ons.notification.alert(data['sell']);
+							showPopup(product_id, portion_id, data['defaultModifiers']);
+							return;
+						}
+						if (data['sell'] != '' && typeof data['sell'] != "undefined")
+							ons.notification.alert(data['sell']);
+
+						ons.notification.toast('<span style="color:black !important;">Done</span>', { timeout: 1000, animation: 'ascend' });
+
+						sessionCatApp();
+
+					} else if (data == "FAILED") {
+						ons.notification.toast('<span style="color:black !important;">Please select collection/delivery or order at table</span>', { timeout: 1000, animation: 'ascend' });
+
+						mynav.resetToPage("start.html");
+
+					}
+				}
+			});
+		}
+
+
+		function showDescModal(allergenEl) {
+			$('#imageDescription').attr('src', $(allergenEl).attr('src'));
+			$('#modalDescription').html($(allergenEl).attr('data-description') + "<br>" + $(allergenEl).attr('data-name'));
+			var getAllergens = '';
+			$('#modalAllergens').html('');
+			allergensProduct = $(allergenEl).attr('data-allergens').split(",");
+			$.each(allergensProduct, function (i, item) {
+				if (parseInt(item) > 0) {
+					getAllergens += allergens.find(x => x.id === item).name + ' - <img class="allergen" style="max-width:20px; margin:2px; display:inline-block; border-radius: 25px; background: ' + allergens.find(x => x.id === item).color + '" title="' + allergens.find(x => x.id === item).name + '" src="https://online.bb01.net/' + allergens.find(x => x.id === item).image + '"><br>';
+				}
+			});
+			$('#modalAllergens').html(getAllergens);
+
+			//console.log($(allergenEl).attr('data-allergens'));
+			document.querySelector('#showDescription').show();
+
+		}
+
+
+
+
+
+
+	</script>
+
+	<!-- <ons-toolbar>
+		<div class="left">
+			<ons-toolbar-button onclick="openMenu()">
+				<ons-icon icon="md-menu"></ons-icon>
+			</ons-toolbar-button>
+		</div>
+		<div class="center">About</div>
+		<div class="right">
+			<a id="headerTotal"></a>
+
+
+			<span onclick="loadPage('cart.html')" id="setCartCount" class="fa-stack has-badge" data-count="">
+				<i class="fa fa-circle fa-stack fa-inverse"></i>
+				<i style="" class="fa fa-shopping-cart fa-stack-2x red-cart"></i>
+			</span>
+		</div>-->
+
+	<div style="background: #f0e9dd !important;" class="fixed-top">
+
+		<div class="container ">
+			<div style="display: flex;justify-content: space-between;/*! padding: 0px 20px; */">
+				<div
+					style="/*! padding: 0px 10px; */border: 1px solid white;border-radius: 0px 0px 30px 30px;background: white;">
+					<!-- <span style="font-size: 30px;">Kanteen</span> -->
+					<img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 150px;" onclick="goToStart()">
+				</div>
+				<div style="padding: 5px;">
+					<span>eat<b>POS</b></span>
+				</div>
+			</div>
+		</div>
+
+		<div class="container py-3" >
+			<span class="py-2 pt-3" style="font-size: 24px;font-weight: 500;">Order</span>
+		</div>
+
+	</div>
+
+	<!-- </ons-toolbar> -->
+
+	<div class="Menutabar" style="padding-top: 165px !important;">
+		<ul class="nav nav-tabs" id="myTab" role="tablist"
+			style="background: white;font-size: 13px;text-transform: uppercase;font-weight: 600;">
+			<li class="nav-item">
+				<a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
+					aria-selected="true">Food</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab"
+					aria-controls="profile" aria-selected="false">Drinks</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab"
+					aria-controls="contact" aria-selected="false">View All</a>
+			</li>
+		</ul>
+	</div>
+	<div class="tab-content pb-2" id="myTabContent" style="background: #fff; min-height: 80vh;">
+		<div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+			<div class="" id="MenuFoodList" style="background: white;">
+				<div class="container">
+					<div class="row justify-content-between px-3 py-3">
+						<span style="font-size: 16px;color: black;">Dink menu section</span>
+						<span style="font-size: 14px;color: gray;" onclick="loadPage('categoryAll.html')">View
+							All</span>
+					</div>
+
+					<div class="MenuList" style="width:100%; display: block ruby; overflow: auto;">
+						<figure class="figure">
+							<img src="asset/img/home-bg.png" class="figure-img img-fluid rounded" alt="...">
+							<figcaption class="figure-caption text-center">items</figcaption>
+						</figure>
+						<figure class="figure">
+							<img src="asset/img/home-bg.png" class="figure-img img-fluid rounded" alt="...">
+							<figcaption class="figure-caption text-center">items</figcaption>
+						</figure>
+						<figure class="figure">
+							<img src="asset/img/home-bg.png" class="figure-img img-fluid rounded" alt="...">
+							<figcaption class="figure-caption text-center">items</figcaption>
+						</figure>
+						<figure class="figure">
+							<img src="asset/img/home-bg.png" class="figure-img img-fluid rounded" alt="...">
+							<figcaption class="figure-caption text-center">items</figcaption>
+						</figure>
+
+						<!-- <img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2"> -->
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+			<div class="" id="MenuDrinkList" style="background: white;">
+				<div class="container">
+					<div class="row justify-content-between px-3 py-3">
+						<span style="font-size: 16px;color: black;">Dink menu section</span>
+						<span style="font-size: 14px;color: gray;" onclick="loadPage('categoryAll.html')">View
+							All</span>
+					</div>
+
+					<div class="MenuList" style="width:100%; display: block ruby; overflow: auto;">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+						<img src="asset/img/home-bg.png" alt="" srcset="" class="img-thumbnail m-2">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="tab-pane fade viewAllCat" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+
+			<!-- <ons-list style="width:100%;margin-top:0px" id="categoryList"></ons-list> -->
+
+			<div class="container" style="background: #fff;">
+				<div class="row">
+					<div class="col-12">
+						<div id="allCatPro">
+							<!-- <ul class="list-group py-2">
+								<li class="list-group-item " style="font-weight: 600;border: 1px solid grey !important;border-width: 0px 0px 1px 0px !important;">Hot Tea</li>
+								<li class="list-group-item">Dapibus ac facilisis in</li>
+								<li class="list-group-item">Morbi leo risus</li>
+								<li class="list-group-item">Porta ac consectetur ac</li>
+								<li class="list-group-item">Vestibulum at eros</li>
+							</ul> -->
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+
+
+
+	<!-- <div class="tabbar tabbar--top tabbar--top-border" style="width:100%; display: block ruby; overflow: auto;">
+		<label class="tabbar__item tabbar--top-border__item">
+			<input type="radio" name="top-tabbar-b" checked="checked">
+			<button class="tabbar__button tabbar--top-border__button">
+				Food
+			</button>
+		</label>
+
+		<label class="tabbar__item tabbar--top-border__item">
+			<input type="radio" name="top-tabbar-b">
+			<button class="tabbar__button tabbar--top-border__button" >
+				Drink
+			</button>
+		</label>
+
+		<label class="tabbar__item tabbar--top-border__item">
+			<input type="radio" name="top-tabbar-b">
+			<button class="tabbar__button tabbar--top-border__button">
+				View All
+			</button>
+		</label>
+	</div> -->
+
+
+
+	<ons-fab position="bottom center" class="fixed-btm-bag" onclick="loadPage('cart.html')" style="transform: translate3d(0px, 0px, 0px) scale(1);width: 50px !important;height: 50px !important;">
+		<!-- <ons-icon style="color:var(--main-2)" icon="fa-shopping-cart"></ons-icon> -->
+		<img src="asset/Icons/shopping bag.png" alt="" srcset="" style="height: 35px;padding: 0px 0px 5px 0px; margin: 0px 0px 7px 0px;">
+	</ons-fab>
+
+	<ons-bottom-toolbar>
+
+		<div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a"  id="homchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img id="homeimg" src="asset/Icons/Home.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')" >
+				<input type="radio" name="tabbar-a" id="ordchk" checked="checked">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img id="ordimg" src="asset/Icons/Order - Yellow.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px; color: #eac278 !important;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a" id="accchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img id="accimg" src="asset/Icons/Account - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ACCOUNT</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a" id="otrchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img id="otrimg" src="asset/Icons/Other - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+
+		<!-- <ons-row style="padding:5px">
+			<ons-col width="30%">
+				<button class="toolbar-button toolbar-button--outline" id="finishAndPay"
+					onclick="loadPage('cart.html')">
+					Finish and pay
+				</button>
+
+			</ons-col>
+			<ons-col width="30%"> </ons-col>
+			<ons-col width="40%" style="color:var(--main-5)"> Powered by <a href="https://eatpos.co.uk"><img width=50
+						src="https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled3.svg"></a>
+			</ons-col>
+		</ons-row> -->
+
+	</ons-bottom-toolbar>
+
+	<ons-modal id="categoryModal" direction="up">
+		<div style="text-align: center">
+			<p>
+				<ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+			</p>
+		</div>
+	</ons-modal>
+
+
+	<ons-dialog id="showDescription">
+		<div style="height:450px;text-align: center; padding: 10px;overflow-y:scroll">
+			<ons-button onclick="hideLoginModal('showDescription')">Go back</ons-button>
+
+			<div style="text-align: center; margin-top:10px">
+				<img style="max-width:100%" id="imageDescription" />
+			</div>
+			<div id="modalDescription" style="text-align: center">
+			</div>
+			<div id="modalAllergens" style="text-align: center">
+
+			</div>
+			<ons-button style="margin-top:5px" onclick="hideLoginModal('showDescription')">Go back</ons-button>
+
+		</div>
+	</ons-dialog>
+
+	<!-- <ons-toast id="catToast">
+		This is an Onsen Toast!<button>Hoge</button>
+	</ons-toast> -->
+
+
+
+</ons-page>

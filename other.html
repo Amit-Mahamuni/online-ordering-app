@@ -1,0 +1,176 @@
+<ons-page id="other" style="background: #f0e9dd !important;">
+
+    <style>
+        .descTitle {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .iconBox {
+            color: #000;
+        }
+    </style>
+
+    <div style="background: #f0e9dd !important;" class=" fixed-top">
+
+        <div class="container">
+            <div style="display: flex;justify-content: space-between;/*! padding: 0px 20px; */">
+                <div
+                    style="/*! padding: 0px 10px; */border: 1px solid white;border-radius: 0px 0px 30px 30px;background: white;">
+                    <!-- <span style="font-size: 30px;">Kanteen</span> -->
+                    <img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 150px;" onclick="goToStart()">
+                </div>
+                <div style="padding: 5px;">
+                    <span>eat<b>POS</b></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="container py-3" >
+            <div class="row ">
+                <div class="col-8 d-flex justify-content-start align-items-center">
+                    <span class="py-2 pt-3" style="font-size: 24px; font-weight: 500;">Information</span>
+                </div>
+                <div class="d-flex justify-content-end align-items-center col-4">
+                    <img src="asset/Logos/eatPOS and WhatsApp/WhatsApp Logo.png" alt="" srcset="" style="width: 50px;">
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div style="padding-top: 190px !important; background: #f0e9dd;">
+        <iframe
+            src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d9720.82657655563!2d-1.8834016!3d52.4753941!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0xe8f8bdc25b762b0d!2sKanteen!5e0!3m2!1sen!2sin!4v1606463585872!5m2!1sen!2sin"
+            width="100%" height="200" frameborder="0" style="border:0;" allowfullscreen="" aria-hidden="false"
+            tabindex="0"></iframe>
+    </div>
+
+    <div class="container py-3" style="background: #ffffff !important;">
+        <div class="row">
+            <div class="col-12">
+                <div class="row iconBox">
+                    <div class="col-2">
+                        <img src="asset/Icons/Location.png" alt="" srcset="" style="width: 50px;">
+                    </div>
+                    <div class="col-10">
+                        <h3>Where to find us</h3>
+                        <p>15 Gibb Sreet, Digbeth<br>
+                            Birmingham, B4 9AA</p>
+                    </div>
+                </div>
+                <div class="row iconBox">
+                    <div class="col-2">
+                        <img src="asset/Icons/Follow Us.png" alt="" srcset="" style="width: 50px;">
+                    </div>
+                    <div class="col-10">
+                        <h3>Let’s be friends</h3>
+                    </div>
+                    <!-- <ul style="list-style: none;">
+                        <li><img src="asset/Icons/Instagram Logo.png" alt="" srcset="" style="width: 40px;">
+                            @kanteen_life</li>
+                        <li><img src="asset/Icons/Facebook Logo.png" alt="" srcset="" style="width: 40px;"> /kanteen
+                        </li>
+                        <li><img src="asset/Icons/Website Icon.png" alt="" srcset="" style="width: 40px;">
+                            kanteen-life.com</li>
+                    </ul> -->
+                </div>
+                <div class="row iconBox">
+                    <div class="col-2">
+                        <img src="asset/Icons/Instagram Logo.png" alt="" srcset="" style="width: 50px;">
+                    </div>
+                    <div class="col-10">
+                        <h3> @kanteen_life</h3>
+                       
+                    </div>
+                </div>
+                <div class="row iconBox">
+                    <div class="col-2">
+                        <img src="asset/Icons/Facebook Logo.png" alt="" srcset="" style="width: 50px;">
+                    </div>
+                    <div class="col-10">
+                        <h3>/kanteenlife</h3>                       
+                    </div>
+                </div>
+                <div class="row iconBox">
+                    <div class="col-2">
+                        <img src="asset/Icons/Website Icon.png" alt="" srcset="" style="width: 50px;">
+                    </div>
+                    <div class="col-10">
+                        <h3> kanteen-life.com</h3>                     
+                    </div>
+                </div>
+
+                <div class="row iconBox">
+                    <div class="col-2">
+                        <img src="asset/Icons/WiFi.png" alt="" srcset="" style="width: 50px;">
+                    </div>
+                    <div class="col-10">
+                        <h3>Free Wifi</h3>
+                        <p>Find 'kanteenguest' in your Setings</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- <ons-fab position="bottom center" onclick="loadPage('cart.html')"> -->
+    <!-- <ons-icon style="color:var(--main-2)" icon="fa-shopping-cart"></ons-icon> -->
+    <!-- <img src="asset/Icons/shopping bag.png" alt="" srcset="" style="height: 35px;padding: 0px 0px 5px 0px;">
+	</ons-fab> -->
+
+    <ons-bottom-toolbar>
+        <div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a"  id="homchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img id="homeimg" src="asset/Icons/Home.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')" >
+				<input type="radio" name="tabbar-a" id="ordchk" >
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img id="ordimg" src="asset/Icons/Order - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a" id="accchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img id="accimg" src="asset/Icons/Account - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ACCOUNT</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a" id="otrchk" checked="checked">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img id="otrimg" src="asset/Icons/Other - Yellow.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+    </ons-bottom-toolbar>
+
+
+
+
+</ons-page>

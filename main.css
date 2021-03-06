@@ -1,0 +1,38 @@
+/* @import url('https://fonts.googleapis.com/css?family=Oswald&display=swap');
+
+.page,.button,.toolbar-button,.list,h1,h2,h3,.toolbar__title {
+  font-family: 'Oswald','Montserrat','Noto Sans JP','Indie Flower', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif;
+} */
+
+/* @import url('\asset\font\CorporativeSansRd-Regular.otf'); */
+
+/* @font-face {
+  font-family: "CorporativeThin";
+  src: url("asset\font\CorporativeSansRd-Regular.otf");  
+}
+.page,.button,.toolbar-button,.list,h1,h2,h3,.toolbar__title {
+  font-family: 'CorporativeThin','Montserrat','Noto Sans JP','Indie Flower', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif;
+} */ 
+
+
+@font-face {
+  font-family: "CorporativeThin";
+  src: url("asset/font/Latinotype-CorporativeSansRd-Medium.otf"); 
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "CorporativeThin";
+  src: url("asset/font/CorporativeSansRd-Regular.otf"); 
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "CorporativeThin";
+  src: url("asset/font/Latinotype-CorporativeSansRd-Bold.otf"); 
+  font-weight: 600;
+}
+
+.page,.button,.toolbar-button,.list,h1,h2,h3,h4,h5,h6,p,span,li,.toolbar__title {
+  font-family: 'CorporativeThin','Montserrat','Noto Sans JP','Indie Flower', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif !important;
+}

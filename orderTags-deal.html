@@ -1,0 +1,310 @@
+<ons-page id="orderTags-deal">
+	<script>
+
+		ons.getScriptPage().onShow = function () {
+			idArray = [];
+			idArrayDis = [];
+
+			var tag1 = document.querySelector('#tagList');
+			//	console.log(prodList);
+			tag1.innerHTML = '<div style="margin: 20px auto; width: 320px;"><p>Loading stuff...</p><ons-progress-circular value="10"></ons-progress-circular></div>';
+			prod = mynav.topPage.data.id;
+			port = mynav.topPage.data.portid;
+			defaultMods = mynav.topPage.data.defaultMods;
+			selectID = mynav.topPage.data.selectID;
+
+			getTags(prod, port, defaultMods);
+
+		};
+		function submitTagsDeal() {
+
+			$('.getTag').each(function () {
+				if ($(this).prop("checked")) {
+
+					//idArray.push($(this).find("input").prop("displaytagdeal").split("-")[1]);
+					idArrayDis.push($(this).attr("data-displaytagdeal"));
+					idArray.push($(this).find("input").prop("id").split("-")[1]);
+				}
+			});
+			row_id = localStorage.getItem("ro");
+			row_id = typeof row_id == "undefined" ? "-1" : row_id;
+			var UpData = 'tempid=' + row_id + '&addtagId=' + idArray;
+			updateTempOrder(UpData);
+		}
+
+
+		function updateTempOrder(data) {
+			UpData = data;
+			$.ajax({
+				url: BASE_URL + "/checkTagsApp",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + data,
+				crossDomain: true,
+				success: function (response) {
+					localStorage.setItem("myTOK", response.split('THISTOKEN')[1]);
+					response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+					if (response == 'd') {
+						ons.notification.toast('Done!', { timeout: 1000, animation: 'ascend' });
+						mynav.popPage({
+							data: {
+								selectID: selectID,
+								idArrayDis: idArrayDis,
+								idArray: idArray,
+
+
+							}
+						});
+					} else {
+						ons.notification.alert(response);
+					}
+				}
+			});
+		}
+
+		function getTags(prod, port, defaultMods2) {
+			console.log(defaultMods);
+			var tag1 = document.querySelector('#tagList');
+			//	console.log(prodList);
+			$.ajax({
+				url: BASE_URL + "/getOrderTags",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'portid=' + port + '&id=' + prod,
+				crossDomain: true,
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+
+					if (data == "NO") {
+						ons.notification.alert("No options for this item");
+						mynav.popPage();
+
+					}
+					defaultModsArray = defaultMods2.split(",");
+					var allTags = "<span>";
+					allTags += '<ons-list expandable style="width:100%" class="tagList1">';
+					i = 0;
+					data.group.forEach(groups => {
+						if (i % 2 == 0) {
+							colourStyle = "color:var(--main-2) !important"
+						} else {
+							colourStyle = "color:var(--main-5) !important"
+
+
+						}
+						i++;
+						if (i == 1)
+							exp = "expanded";
+						else
+							exp = "";
+						if (groups.Compulsory == 1) {
+							ast = " *";
+
+						} else {
+
+							ast = "";
+						}
+						if (groups.FreeTagging == 0)
+							checkbox = "checkbox";
+						else
+							checkbox = "radio";
+
+						allTags += '<ons-list-item expandable style="width:100%;' + colourStyle + '"  class="tagList1 ' + exp + '"  >' + groups.Name + ast + '<div class="expandable-content">';
+						data.tag[groups.Id].forEach(tags => {
+							//console.log (defaultModsArray);
+							if (defaultModsArray.includes(tags.oId)) {
+								//alert (tags.oId);
+								tagChecked = " checked=checked";
+							} else {
+								tagChecked = "";
+							}
+							if (defaultModsArray[0] == "0" && tags.isSelected == 1) {
+								tagChecked = " checked=checked";
+
+							}
+							allTags += ' <p><label class="left"> <ons-' + checkbox + tagChecked + ' class="getTag" modifier="material" data-displaytagdeal="' + tags.oTag + ' ' + tags.oPrice + '" input-id="tag-' + tags.oId + '" name="' + groups.Name + '" val="' + tags.oId + '"></ons-' + checkbox + '></label> <label style="' + colourStyle + '" for="tag-' + tags.oId + '" class="center">' + tags.oTag + ' ' + tags.oPrice + '</label></p>';
+
+						});
+						allTags += '</div>';
+						allTags += '</ons-list-item>';
+
+
+					});
+					allTags += '</ons-list>';
+
+					allTags += "</span>";
+
+					tag1.innerHTML = '';
+					//console.log(ons.createElement(allTags));
+					//alert ("true");
+					tag1.appendChild(ons.createElement(allTags));
+				}
+			});
+
+
+		}
+
+	</script>
+	<!-- <ons-toolbar>
+		<div class="left">
+
+		</div>
+		<div class="center">Customise your deal!</div>
+
+	</ons-toolbar> -->
+
+	<div
+		style="background: url('asset/img/home-bg.png') center center/cover no-repeat scroll padding-box border-box #ccc;/*! vertical-align: bottom !important; */">
+
+		<div style="display: flex;justify-content: space-between;padding: 0px 20px;">
+			<div style="padding: 5px 20px;border: 1px solid white;border-radius: 0px 0px 10px 10px;background: white;">
+				<!-- <span style="font-size: 30px;">Kanteen</span> -->
+				<img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 120px;">
+			</div>
+			<div style="padding: 5px; color: white;">
+				<span>eat<b>POS</b></span>
+			</div>
+
+		</div>
+		<div class="container py-5" style="padding-bottom: 120px !important;">
+			<div class="row ">
+				<div class="col-8 d-flex justify-content-start align-items-center">
+					<ons-button style="background: transparent;box-shadow: none; font-size: 20px;"
+						onclick="loadPage('category.html')">
+						<i class="fas fa-arrow-left" style="color: black !important;"></i>
+					</ons-button>
+					<!-- <span class="py-2" style="font-size: 22px;font-weight: 500;">Hot Drink (5)</span> -->
+				</div>
+				<div class="d-flex justify-content-end align-items-center col-4">
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="container py-2">
+		<div class="row">
+			<div class="col-12">
+				<div class="d-flex justify-content-between">
+					<span style="font-size: 22px;font-weight: 500;">Product Title</span>
+					<span style="font-size: 15px;font-weight: 500;">£12.50</span>
+				</div>
+				<div>
+					<span>Our silky Faxctory Blend roast, balanced with steamed milk with a light layer of
+						foam.</span><br>
+
+					<div id="tagList" class="counttags" style="padding: 10px ;">
+					</div>
+
+					<span class="descTitle">Size</span><br>
+					<span>Small | Medium | Large</span><br><br>
+
+					<span class="descTitle">Syrups</span><br>
+					<span>Vanilla | Toffee | Nut | Caramel</span><br><br>
+
+					<span class="descTitle">Milk &amp; Dailry Alternatives</span><br>
+					<span>Whole Milk | Semi-skimmed | Oat | Soya</span><br><br>
+
+					<span class="descTitle">Expresso Options</span><br>
+					<span>1 Shot | 2 Shot | 4 Shot</span><br><br>
+
+					<span style="font-size:20px; font-weight:600;">Nutrition &amp; Allergens</span>
+					<table>
+						<tbody>
+							<tr>
+								<td>Size</td>
+								<td>16g</td>
+							</tr>
+							<tr>
+								<td>Calories</td>
+								<td>170 Cal</td>
+							</tr>
+							<tr>
+								<td>Fat</td>
+								<td>5.8g</td>
+							</tr>
+							<tr>
+								<td>Protian</td>
+								<td>1.2g</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<!-- <div id="tagList" class="counttags">
+	</div> -->
+	<!-- <ons-bottom-toolbar>
+		<div class="center"></div>
+		<div class="right">
+			<ons-toolbar-button>
+				<ons-button style="padding:5px" onclick="submitTagsDeal()">Add to cart</ons-button>
+
+			</ons-toolbar-button>
+		</div>
+	</ons-bottom-toolbar> -->
+
+	<ons-bottom-toolbar style=" margin-bottom: 50px;background: transparent;">
+		<div class="d-flex justify-content-end" style="padding:5px">
+			<button class="toolbar-button toolbar-button--outline" onclick="submitTagsDeal()"
+				style="background: #eac278;color: black !important;padding: 5px 20px;border: 1px solid #eac278;border-radius: 20px;font-size: 15px;">
+				ADD TO BASKET
+			</button>
+		</div>
+	</ons-bottom-toolbar>
+
+	<ons-bottom-toolbar>
+		<div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img src="asset/Icons/Home.png" alt="" srcset="" style="width:40px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 5px;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')">
+				<input type="radio" name="tabbar-a" checked="checked">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img src="asset/Icons/Order.png" alt="" srcset="" style="width:40px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 5px;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img src="asset/Icons/Rewards.png" alt="" srcset="" style="width:40px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 5px;">REWARDS</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img src="asset/Icons/Other.png" alt="" srcset="" style="width:40px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 5px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+	</ons-bottom-toolbar>
+
+</ons-page>

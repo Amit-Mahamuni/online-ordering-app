@@ -1,0 +1,482 @@
+<ons-page id="confirm">
+	<style>
+		#theAddress2 ons-input {
+			width: 100%;
+
+		}
+
+		.loggedDisabled ::placeholder {
+			color: #131414;
+		}
+
+		.loggedDisabled input {
+			color: #131414;
+		}
+		/* .loggedDisabled .btn:hover input[disabled], .loggedDisabled .btn:active input[disabled], .loggedDisabled .btn:focus input[disabled]{
+  color:green
+} */
+
+		.loggedDisabled input[disabled]{
+			color: #131414;
+			opacity: 1 !important;
+		}
+		.text-input--material__label--active{
+			display: none;
+		}
+	</style>
+	<script>
+
+		document.querySelector('#backCart').onClick = function (event) {
+			// Reset the whole stack instead of popping 1 page
+			document.querySelector('ons-navigator').popPage({
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + {
+					fromConfirm: "yes",
+				}
+			});
+		};
+
+		ons.getScriptPage().onShow = function () {
+
+
+
+			$('.clearDetails').val();
+			toSetGuests = isNaN(localStorage.getItem("guestsCart")) ? '' : localStorage.getItem("guestsCart");
+			$('#theGuests').val(toSetGuests);
+
+
+			if (localStorage.getItem("tableSelected") == "noneSelected") {
+				$('.theAddress2').show();
+				$('.theTable').hide();
+
+
+			} else {
+				$('.theAddress2').hide();
+				$('.theTable').show();
+
+
+
+			}
+			isLogged = localStorage.getItem("isLogged");
+
+
+			confirm_box_code();
+
+			isonCheckout=true;
+
+		};
+
+		function confirm_box_code() {
+
+			var tag1 = document.querySelector('#theConfirm');
+			tag1.innerHTML = '<div style="margin: 20px auto; width: 320px;"><p>Loading stuff...</p><ons-progress-circular value="10"></ons-progress-circular></div>';
+
+			$.ajax({
+				url: BASE_URL + "/confirm_box_code",
+				type: "POST",
+				data: 'my-tok=' + localStorage.getItem('myTOK'),
+				crossDomain: true,
+				success: function (response) {
+					localStorage.setItem("myTOK", response.split('THISTOKEN')[1]);
+					response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+					localStorage.setItem("kiosk_session_table", response.kiosk_session_table);
+
+					var theReceipt = document.querySelector('#finalItems');
+					var total_price = 0;
+					theReceipt.innerHTML = "";
+					//msg = JSON.parse(msg);
+					//currTicks =[];
+					i = 0;
+					response.session_cart_arr.forEach(name1 => {
+						// if (i % 2 === 0)
+						// 	colourStyle = 'color:var(--main-4)';
+						// else
+						// 	colourStyle = 'color:var(--main-3)';
+						colourStyle = 'color:#131414; font-weight:400;'
+						i++;
+						if (i == 1)
+							exp = "expanded";
+						else
+							exp = "";
+						theReceipt.appendChild(ons.createElement('<ons-list-item data-cat="' + name1.MenuItemName + '" style="' + colourStyle + '" class="aCategoryItem catExpanded">' + name1.Quantity + ' X ' + name1.MenuItemName + '<div class="right">£' + parseFloat(name1.txttotal).toFixed(2) + '</div></ons-list-item>'));
+						total_price = parseFloat(total_price) + parseFloat(name1.txttotal);
+
+					});
+					if (response['discount'] != '' && response['discount'] != '0') {
+
+						total_price_old = total_price;
+						total_price_old = parseFloat(total_price_old).toFixed(2);
+						if (response['discountType'] == 0) {
+							total_price = total_price * (1 - response['discount'] / 100);
+
+							theReceipt.appendChild(ons.createElement('<ons-list-item style="background:white !important;color:black;font-weight:500" class="aCategoryItem catExpanded">Subtotal<div class="right">£' + total_price_old + '</div></ons-list-item>'));
+
+							theReceipt.appendChild(ons.createElement('<ons-list-item style="background:white !important;color:black;font-weight:500" class="aCategoryItem catExpanded">Discount<div class="right">' + response['discount'] + '%</div></ons-list-item>'));
+						} else {
+							total_price = total_price - response['discount'];
+
+							theReceipt.appendChild(ons.createElement('<ons-list-item style="background:white !important;color:black;font-weight:500" class="aCategoryItem catExpanded">Subtotal<div class="right">£' + total_price_old + '</div></ons-list-item>'));
+
+							theReceipt.appendChild(ons.createElement('<ons-list-item style="background:white !important;color:black;font-weight:500" class="aCategoryItem catExpanded">Discount<div class="right">£' + parseFloat(response['discount']).toFixed(2) + '</div></ons-list-item>'));
+
+						}
+					}
+
+					if (response['loyalty'] != '') {
+						theReceipt.appendChild(ons.createElement('<ons-list-item style="background:white !important;color:black;font-weight:500" class="aCategoryItem catExpanded">Loyalty<div class="right">£' + parseFloat(response['loyalty']).toFixed(2) + '</div></ons-list-item>'));
+					}
+
+					var to_pay = "Grand total";
+					if (response['loyalty'] != '') {
+						total_price = parseFloat(total_price) - parseFloat(response['loyalty']);
+						to_pay = "To pay";
+					}
+					total_price = parseFloat(total_price).toFixed(2);
+					theReceipt.appendChild(ons.createElement('<ons-list-item style="background:white !important;color:black;font-weight:500 ; border:1px solid black; border-width:1px 0px 0px 0px;" class="aCategoryItem catExpanded">Total<div class="right" style="font:size:20px">£' + total_price + '</div></ons-list-item>'));
+					$('#payAmount').html('£' + total_price);
+
+					if (response['guest_checkout'] == 0) {
+						$("#guest_name").val(response['customer_name']);
+						$("#guest_phone").val(response['customer_phone'])
+						$("#guest_email").val(response['customer_email'])
+
+						$(".loggedDisabled").prop("disabled", true);
+
+						$("#loginSecCrm").css("display", "none");
+						$("#theAddress2").css("display", "block");
+
+					} else {
+						$(".loggedDisabled").prop("disabled", false);
+
+						$("#loginSecCrm").css("display", "block");
+						$("#theAddress2").css("display", "none");
+
+					}
+					tag1.innerHTML = '';
+
+					console.log(response);
+
+				}
+			});
+		}
+		function kiosk_pay() {
+			var modal = document.querySelector('#cardModal');
+			modal.show();
+		}
+
+		function payNow() {
+			saveOrders(true);
+
+		}
+		function saveOrders(tryPay) {
+			tryPay = (typeof tryPay === 'false') ? false : tryPay;
+
+			if (localStorage.getItem('kiosk_session_table') != 0 && !tryPay) {
+				kiosk_pay();
+				return false;
+			}
+			document.querySelector('#showModalCart2').show();
+
+
+			var guest_name = $("#guest_name").val();
+			var guest_email = $("#guest_email").val();
+			var guest_phone = $("#guest_phone").val();
+			var note = $("#order_note").val();
+			var theGuests = $("#theGuests").val();
+
+			var card_status = 'stream2';
+			address1 = localStorage.getItem("address11")
+			address2 = localStorage.getItem("address12")
+			address3 = localStorage.getItem("address13")
+			address4 = localStorage.getItem("address14")
+
+
+			tryPayment = localStorage.getItem("payMethod")
+			if (tryPayment != "cash_payment") {
+				var card_type_flag = "stripe";
+			} else {
+				var card_type_flag = 'Cash';
+			}
+			if (tryPay) {
+				var card_type_flag = "stripe";
+			}
+
+			//swal(datepick);		return;
+			//var note = $("#notebox").val();
+
+
+
+			$.ajax({
+				url: BASE_URL + "/saveOrders",
+				type: "POST",
+
+				crossDomain: true,
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'guest_name=' + guest_name + '&guest_phone=' + guest_phone + '&guest_email=' + guest_email + '&card_type_flag=' + card_type_flag + '&address1=' + address1 + '&address2=' + address2 + '&address3=' + address3 + '&address4=' + address4 + '&note=' + note + '&theGuests=' + theGuests + '&tryPay=' + tryPay,
+				success: function (response) {
+					localStorage.setItem("myTOK", response.split('THISTOKEN')[1]);
+					response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+					console.log(response);
+					document.querySelector('#showModalCart2').hide();
+					if (response == "login") {
+						ons.notification.alert("Please login");
+						showLoginModal('loginModal');
+
+
+
+						return;
+					}
+					if (response == "failed1") {
+						ons.notification.alert("Please login/add items");
+
+
+
+						return;
+					}
+					if (response == "4") {
+						ons.notification.toast('Order timed out', { timeout: 3000, animation: 'fall' });
+						mynav.resetToPage("start.html");
+
+					}
+					if (response['issues'] == 1) {
+						ons.notification.toast(response['error'], { timeout: 2000, animation: 'fall' });
+
+						return;
+					}
+					else if (response['success'] == '1') {
+						localStorage.setItem("temp_review", response['temp_review']);
+						var creditcard = document.getElementById("creditcard_payment");
+						var Ticket_ID = response['ticket_id'];
+						var final_amount = response['Totalamount'];
+						if (card_type_flag != "Cash" && final_amount > 0 && !tryPay) {
+
+							mynav.bringPageTop('pay.html', {
+								data: {
+
+									payForm: response['thisForm'],
+
+								}
+							});
+
+							//	$("#contact-form").submit();
+						} else if (response['has_guest_check'] != '1') {
+							mynav.resetToPage("receipt1.html");
+							//location.href = BASE_URL + "/myaccount2";
+						} else if (response['has_guest_check'] == '1') {
+							mynav.resetToPage("receipt1.html");
+
+							//location.href = BASE_URL + "/thanks";
+						}
+
+
+
+
+
+					}
+				}
+			});
+
+
+
+
+		}
+
+
+
+	</script>
+
+	<!-- <ons-toolbar>
+		<div class="left">
+			<ons-toolbar-button onclick="openMenu()">
+				<ons-icon icon="md-menu"></ons-icon>
+			</ons-toolbar-button>
+			<ons-back-button id="backCart">Back</ons-back-button>
+		</div>
+		<div class="center">Almost done
+		</div>
+		<div class="right">
+			<ons-toolbar-button style="display:none" onclick="findlist()">Placeholder</ons-toolbar-button>
+		</div>
+	</ons-toolbar> -->
+
+	<div style="background: #f0e9dd !important;" class="fixed-top">
+
+		<div class="container ">
+			<div style="display: flex;justify-content: space-between;/*! padding: 0px 20px; */">
+				<div
+					style="/*! padding: 0px 10px; */border: 1px solid white;border-radius: 0px 0px 30px 30px;background: white;">
+					<!-- <span style="font-size: 30px;">Kanteen</span> -->
+					<img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 150px;"
+						onclick="goToStart()">
+				</div>
+				<div style="padding: 5px;">
+					<span>eat<b>POS</b></span>
+				</div>
+			</div>
+		</div>
+		<div class="container " style="padding-top: 0px !important;">
+			<div class="row ">
+				<div class="col-8 d-flex justify-content-start align-items-center">
+					<!-- <ons-back-button style="color: black !important;"></ons-back-button> -->
+					<ons-button style="background: transparent;box-shadow: none; font-size: 20px;"
+						onclick="loadPage('cart.html')" id="backCart">
+						<i class="fas fa-arrow-left" style="color: black !important;"></i>
+					</ons-button>
+					<span class="py-3 pb-4" style="font-size: 22px;font-weight: 500;">Almost done</span>
+				</div>
+				<div class="d-flex justify-content-end align-items-center col-4">
+					<ons-button onclick="findlist()"
+						style="background: transparent;box-shadow: none;vertical-align: middle;margin: auto; display:none">
+						Placeholder
+					</ons-button>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div style="background: #fff; padding-bottom: 20px; min-height: 80vh; margin-top: 150px !important;">
+		<ons-list id="finalItems" class="finalItems px-3" style="padding: 20px 0px;">
+		</ons-list>
+
+		<div id="theConfirm" class="theConfirm py-2 px-4 " style="padding: 20px 0px;">
+		</div>
+		<div style="display: flex;justify-content: center;">
+			<div style="width: 400px;">
+				<hr style="border-top: 1px solid #131414;">
+			</div>
+		</div>
+
+
+		<div style="text-align: center; padding: 10px 5px;" id="loginSecCrm">
+			<ons-button id="signUpModal" onclick="loadPage('registration.html')" style="background: #eac278; color: black;border-radius: 20px;font-weight: 500;font-size: 15px; margin: 0px 10px 0px 0px;
+					padding: 3px 15px;text-transform: uppercase;" class="button">
+				Sign up</ons-button>
+			<ons-button onclick="loadPage('login.html')" style="background: #eac278; color: black;border-radius: 20px;font-weight: 500; margin: 0px 0px 0px 10px;
+					padding: 3px 15px;font-size: 15px; text-transform: uppercase;" class="button">
+				Login</ons-button>
+		</div>
+
+
+		<div id="theAddress2" style="text-align:center; margin: 20px 0px 80px 0px;" class="px-4 pt-0">
+			<p>
+				<ons-input id="guest_name" class="loggedDisabled theAddress2 clearDetails" modifier="underbar"
+					placeholder="Name" float></ons-input>
+			</p>
+			<p>
+				<ons-input id="guest_phone" modifier="underbar" class="loggedDisabled theAddress2 clearDetails"
+					type="tel" placeholder="Phone Number" float></ons-input>
+			</p>
+			<p>
+				<ons-input id="guest_email" class="loggedDisabled theAddress2 clearDetails" placeholder="Email"
+					type="email" modifier="underbar"></ons-input>
+			</p>
+			<p>
+				<ons-input id="order_note" placeholder="Special Requests" modifier="underbar" class="clearDetails">
+				</ons-input>
+			</p>
+			<!-- <p>
+			<ons-input id="theGuests" class="theTable clearDetails" placeholder="Number of guests" modifier="underbar"
+				type="tel"></ons-input>
+		</p> -->
+		</div>
+	</div>
+
+
+	<ons-modal id="showModalCart2" direction="up">
+		<div style="text-align: center">
+			<p>
+				<ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+			</p>
+		</div>
+	</ons-modal>
+
+	<ons-bottom-toolbar
+		style="padding-top:5px; margin-bottom: 60px; background:transparent !important; min-height: 70px !important; display: flex; justify-content: end;">
+		<div class="row px-2" style="width: 100%;">
+			<div class="col-12 d-flex justify-content-end px-0">
+
+				<ons-button onclick="saveOrders()"
+					style="margin:10px 0px; border-radius:20px; padding: 2px 15px;border-width: 0px;font-size: 16px;font-weight: 500;color: #131414 !important;	background-color: #eac278 !important;">
+					CONTINUE</ons-button>
+
+
+			</div>
+		</div>
+	</ons-bottom-toolbar>
+
+
+
+	<!-- <ons-bottom-toolbar style=" margin-bottom: 50px;background:transparent !important; min-height: 80px !important;">
+		<div class="d-flex justify-content-end" style="padding:5px"> -->
+	<!-- <button class="toolbar-button toolbar-button--outline" onclick="saveOrders()"
+				style="background: #eac278; font-weight:500; color: black !important;padding: 5px 20px;border: 1px solid #eac278;border-radius: 20px;font-size: 16px;">
+				CONTINUE
+			</button> -->
+	<!-- <ons-button onclick="saveOrders()"
+				style=" border-radius:20px; padding: 2px 15px;font-size: 16px;font-weight: 500; margin: 10px 15px;color: #131414 !important;	background-color: #eac278 !important;">
+				CONTINUE</ons-button>
+		</div>
+	</ons-bottom-toolbar> -->
+
+	<ons-bottom-toolbar>
+		<div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a" id="homchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img id="homeimg" src="asset/Icons/Home.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')">
+				<input type="radio" name="tabbar-a" id="ordchk" checked="checked">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img id="ordimg" src="asset/Icons/Order - Yellow.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;color: #eac278 !important;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a" id="accchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img id="accimg" src="asset/Icons/Account - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ACCOUNT</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a" id="otrchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img id="otrimg" src="asset/Icons/Other - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+	</ons-bottom-toolbar>
+
+	<ons-modal direction="up" id="cardModal">
+		<div style="text-align: center">
+			<p id="payAmount">
+
+			</p>
+			<p>
+				<ons-icon icon="md-spinner" size="28px" spin></ons-icon>Payment in progress
+			</p>
+			<button class="toolbar-button toolbar-button--outline" onclick="payNow()">PAY KIOSK</button>
+
+		</div>
+	</ons-modal>
+</ons-page>

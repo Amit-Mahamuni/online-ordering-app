@@ -1,0 +1,86 @@
+<ons-page id="review">
+<style>
+.ordersExpanded { background: #303F9F; }
+.ordersExpanded:nth-child(odd) { background: #C5CAE9; }
+
+
+</style>
+   <script>
+ 
+
+ 
+     ons.getScriptPage().onInit = function() {
+		getReviews();
+      };    
+	 
+	 function getReviews() {
+	//	alert (temp_review);
+
+		$.ajax({
+		url: BASE_URL + "/getReviews",
+			type: "POST",
+			
+					success: function (data) {
+				localStorage.setItem("myTOK",data.split('THISTOKEN')[1]);
+	  			data = data.split('THISTOKEN')[0];data= JSON.parse(data);
+				
+
+									var theReceipt = document.querySelector('#theReviews');
+			
+				theReceipt.innerHTML = "";
+				//msg = JSON.parse(msg);
+				//currTicks =[];
+				i = 0;
+								if (Array.isArray(data)) {
+
+				data.forEach(name1 => {
+				i++;
+				if (i==1) 
+				exp = "";
+				else
+				exp = "";
+				exp = "expanded";
+				//item_price = parseFloat((name1.Price+parseFloat(name1.PriceTag))*(1+name1.taxRate/100)*name1.Quantity).toFixed(2);
+				theReceipt.appendChild(ons.createElement('<ons-list-item expandable expanded style="" class="aCategoryItem catExpanded '+exp+'">' + name1.rating + '/5<div class="right">' + name1.date + '</div><div class="expandable-content">'+name1.custdesc+'</div></ons-list-item>')); 
+		
+				})
+				}
+				//theReceipt.appendChild(ons.createElement('<ons-list-item style="color:white;font-weight:900" class="aCategoryItem catExpanded '+exp+'">Total<div class="right">' + data[0].TotalAmount + '</div><div class="expandable-content"></div></ons-list-item>')); 
+
+				
+			}
+		});
+
+
+		//////////// get tax end ///////////////
+
+	}
+   </script>
+      <ons-toolbar>
+      <div class="left">
+         <ons-toolbar-button onclick="openMenu()">
+            <ons-icon icon="md-menu"></ons-icon>
+         </ons-toolbar-button>
+<ons-toolbar-button>
+            <ons-icon icon="fa-arrow-left" onClick="mynav.popPage()"></ons-icon>
+         </ons-toolbar-button>     
+		 </div>
+      <div class="center">
+Our reviews
+</div>
+      
+   </ons-toolbar>
+ <h2>Our reviews</h2>
+   <ons-list id="theReviews" class="theReviews">
+   </ons-list>
+    
+   <ons-bottom-toolbar>
+      <div class="center"></div>
+      <div class="right" style="padding:5px">
+         <ons-toolbar-button>
+			     
+
+         </ons-toolbar-button>
+      </div>
+   </ons-bottom-toolbar>
+</ons-page>

@@ -1,0 +1,852 @@
+<ons-page id="cart">
+	<style>
+		#theAddress ons-input {
+			width: 100%;
+		}
+
+		#applyCoupon input {
+			color: black;
+		}
+
+		#guestsCart input {
+			color: black;
+		}
+
+		.cartTabBtn .nav-pills .nav-link.active,
+		.nav-pills .show>.nav-link {
+			background: #eac278 !important;
+			color: black !important;
+			padding: 5px 20px;
+			border: 1px solid #eac278;
+			font-size: 13px;
+			font-weight: 500;
+		}
+
+		.cartTabBtn .nav-pills .nav-link {
+			background: transparent !important;
+			color: black !important;
+			padding: 5px 20px;
+			border: 1px solid #eac278;
+			font-size: 13px;
+			font-weight: 500;
+		}
+	</style>
+	<script>
+
+		ons.getScriptPage().onShow = function () {
+			// $('#guestsCart').val("");
+			isDelivery = localStorage.getItem("isDelivery");
+			card_enable = localStorage.getItem("card_enable");
+			cash_enable = localStorage.getItem("cash_enable");
+			tipEnabled = localStorage.getItem("tipEnabled");
+			try {
+				min_order_without_charge = localStorage.getItem("min_order_without_charge");
+				if (parseFloat(min_order_without_charge) > 0) {
+					$('#showCharge').html(`<br>Free delivery on orders above £${parseFloat(min_order_without_charge).toFixed(2)}`);
+
+				}
+			} catch (e) {
+
+			}
+
+
+			if (tipEnabled == 0)
+				$('#gratiPay').hide();
+			else
+				gratiPay();
+
+
+			//Amit updatae
+			// if (cash_enable == 1)
+			// 	$('#paycash').show();
+			// if (card_enable == 1)
+			// 	$('#paycard').show();
+			// else
+			// 	document.getElementById("paycash").innerText = "CHECKOUT";
+
+
+			userPostcode = localStorage.getItem("userPostcode");
+			console.log("t2st");
+
+			if (isDelivery == "true") {
+				console.log("test");
+				$('#theAddress').show();
+				$('#address14').val(userPostcode);
+
+			} else {
+				$('#theAddress').hide();
+			}
+			fromConfirm = typeof mynav.topPage.data.fromConfirm == "undefined" ? "no" : "yes";
+			if (fromConfirm == "no")
+				sessionCart();
+
+		};
+		function emptyCart() {
+			$.ajax({
+				url: BASE_URL + "/emptyBasket",
+				type: "POST",
+				data: 'my-tok=' + localStorage.getItem('myTOK'),
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+					if (data == "OK") {
+
+						loadPage('category.html');
+						ons.notification.alert("Cart emptied");
+
+					}
+				}
+			});
+
+		}
+
+		function addTip(tip) {
+
+			$.ajax({
+				url: BASE_URL + "/addTip",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'tip=' + tip + '&total=' + globTipTot,
+				success: function (data) {
+					if (data == "OK") {
+						localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+						data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+						sessionCart(true);
+						hideLoginModal('showTips');
+						ons.notification.alert("Tip added!");
+
+					}
+				}
+			});
+
+		}
+
+		function changeQTY(ro, qty, action) {
+			showModalCart();
+
+			if (action == "add")
+				qty = parseInt(qty) + parseInt(1);
+			else
+				qty = parseInt(qty) - parseInt(1);
+
+			if (qty == 0) {
+				delRecord(ro);
+				return;
+
+			}
+
+			$.ajax({
+				url: BASE_URL + "/updateSessionQty",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'qty=' + qty + '&ro=' + ro,
+				success: function (data) {
+
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+					if (data == "LOWSTOCKSLOT") {
+						//  $("#postcode_popup").modal('toggle');
+						ons.notification.alert("No more pizzas for this time slot, please try another slot");
+						return;
+					}
+					if (data == "OK") {
+
+						sessionCart();
+
+					} else
+						ons.notification.alert("LOWSTOCK");
+				}
+			});
+
+
+			//////////// get tax end ///////////////
+
+		}
+
+		function applyCoupon() {
+			var coupon_code = $("#applyCoupon").val();
+			showModalCart();
+			$.ajax({
+				url: BASE_URL + "/coupon_code",
+				type: "POST",
+				async: false,
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'coupon_code=' + coupon_code + '&guestsCart=' + parseFloat($('#guestsCart').val()),
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+
+					if (data == 'FALSE') {
+						ons.notification.alert("Not successful");
+					} else if (data == 'Please add some items!') {
+						ons.notification.alert(data);
+						return;
+					}
+					else if (data == 'FAILED2') {
+						ons.notification.confirm("Please login to use this code", { "buttonLables": ["Cancel", "OK"] })
+							.then(function (input) {
+								if (input == 1) {
+									showLoginModal('loginModal');
+								}
+							});
+
+						return;
+					}
+					else if (data == '1') {
+						ons.notification.alert("Code Expired");
+
+
+					} else if (data) {
+						ons.notification.alert("Coupon applied!");
+						sessionCart(false, true);
+					}
+
+
+				}
+			});
+		}
+		function applyLoyalty() {
+
+			if ($('#applyLoyalty').prop("checked"))
+				loyURL = BASE_URL + "/apply_loyality";
+			else
+				loyURL = BASE_URL + "/remove_loyality";
+
+			$.ajax({
+				url: loyURL,
+				type: "POST",
+				async: false,
+
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+					if (data != "FALSE") {
+						sessionCart(false);
+						ons.notification.alert("DONE");
+
+
+					} else {
+						ons.notification.alert("No points available!");
+						document.getElementById("applyLoyalty").checked = false;
+					}
+				}
+			});
+		}
+
+		function delRecord(ro) {
+			showModalCart();
+
+			$.ajax({
+				url: BASE_URL + "/DeleteSessionArr",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'tempid=' + ro,
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+					sessionCart();
+
+
+				}
+			});
+
+
+			//////////// get tax end ///////////////
+
+		}
+		function showModalCart() {
+			var modal = document.querySelector('#showModalCart');
+			modal.show();
+			setTimeout(function () {
+				modal.hide();
+			}, 1000);
+		}
+		function sessionCart(refreshCart, allowCoupon) {
+			refreshCart = (typeof refreshCart === 'undefined') ? true : refreshCart;
+			allowCoupon = (typeof allowCoupon === 'undefined') ? false : allowCoupon;
+
+			var tag1 = document.querySelector('#theCart');
+
+			if (refreshCart) {
+				tag1.innerHTML = '<div style="margin: 20px auto; width: 320px;"><p>Loading stuff...</p><ons-progress-circular value="10"></ons-progress-circular></div>';
+			}
+
+			// $.ajax({
+			// 	url: BASE_URL + "/sessionCartApp",
+			// 	// url: BASE_URL + "/sessCartApp2",
+			// 	type: "POST",
+			// 	data: 'my-tok=' + localStorage.getItem('myTOK'),
+			// 	crossDomain: true,
+			// 	success: function (response) {
+
+			// 		localStorage.setItem("myTOK", response.split('THISTOKEN')[1]);
+			// 		response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+
+			// 		if (response.refreshCoupon == 1)
+			// 			ons.notification.alert('Please apply your coupon again');
+			// 		if (parseFloat(response.applied_loyalty).toFixed(2) > 0) {
+			// 			isLoyalty = 'checked';
+			// 		} else {
+			// 			isLoyalty = '';
+
+			// 		}
+
+			// 		if (localStorage.getItem("hideCouponLoy") == 1) {
+			// 			hideLoy = "display:none";
+
+			// 		} else {
+			// 			hideLoy = "";
+			// 		}
+			// 		if (refreshCart) {
+			// 			var allTags = "<span>";
+			// 			allTags += '<ons-list expandable style="width:100%" class="tagList1">';
+			// 			allTags += response.cart;
+			// 			allTags += '</ons-list>';
+			// 			allTags += "</span>";
+			// 			//	console.log(allTags);
+			// 			tag1.innerHTML = "";
+			// 			//	console.log(ons.createElement(allTags));
+			// 			tag1.appendChild(ons.createElement(allTags));
+			// 			tag1.appendChild(ons.createElement('<ons-list-item style="' + hideLoy + '" class="tagList1"><p><form  style="width:100%" autocomplete="off"><ons-input  type="tel" id="guestsCart" placeholder="Number of guests" modifier="underbar" style="background-color:white !important;width:50%" autocomplete="off"></ons-input> <ons-button style="border:1px solid white;margin-left:5px" onclick="ons.notification.toast(\'Now apply your coupon\', { timeout: 1500, animation: \'fall\' })">OK</ons-button></form></p><p><form   style="width:100%"  autocomplete="off"><ons-input id="applyCoupon" onfocus="ensureGuests()"  placeholder="Coupon code" modifier="underbar" style="background-color:white;width:50%" autocomplete="off"></ons-input><ons-button onclick="applyCoupon()" style="border:1px solid white;margin-left:10px;margin-top:5px">Apply coupon</ons-button></form></p><p><label class="left"><ons-checkbox ' + isLoyalty + ' input-id="applyLoyalty" onclick="applyLoyalty()" ></ons-checkbox></label><label style="color:var(--main-5);margin-left:20px" for="applyLoyalty">Apply loyalty points</label></p></ons-list-item>'));
+			// 		}
+			// 		globTipTot = response.GrandTotal;
+			// 		if (parseFloat(response.grand_orig) != parseFloat(globTipTot))
+			// 			// appendTotal = ons.createElement('<ons-toolbar-button id="cartTotal1" style="background:#eac278; color:black;"><span style="text-decoration:line-through;margin-right:5px">£' + parseFloat(response.grand_orig).toFixed(2) + '</span>£' + parseFloat(response.GrandTotal).toFixed(2) + '</ons-toolbar-button>');
+			// 			//Amit Code 
+			// 			appendTotal = ons.createElement('<span style="background:#f2f2f2; color:black;padding: 10px 20px;border-radius: 20px;border: 1px solid #fff;"><span style="text-decoration:line-through;margin-right:5px">£' + parseFloat(response.grand_orig).toFixed(2) + '</span>£' + parseFloat(response.GrandTotal).toFixed(2) + '</span>');
+			// 		else
+			// 			// appendTotal = ons.createElement('<ons-toolbar-button id="cartTotal1" style="background:#eac278; color:black;">£' + parseFloat(response.GrandTotal).toFixed(2) + '</ons-toolbar-button>');
+			// 			//Amit Code 
+			// 			appendTotal = ons.createElement('<span style="background:#f2f2f2; color:black;padding: 10px 20px;border-radius: 20px;border: 1px solid #fff;">£' + parseFloat(response.GrandTotal).toFixed(2) + '</span>');
+			// 		var tag2 = document.querySelector('#cartTotal');
+			// 		tag2.innerHTML = "";
+			// 		tag2.appendChild(appendTotal);
+			// 		if (parseFloat(response.the_coupon) > 0) {
+			// 			$("#applyCoupon").val(response.couponCode);
+			// 		} else {
+			// 			$("#applyCoupon").val("");
+			// 		}
+			// 		setTimeout(function () {
+			// 			$('#cart .page__content').scrollTop($('#cart .page__content')[0].scrollHeight + 10);
+			// 		}, 500);
+			// 	}
+			// });
+
+			//Amit Code  Start
+			$("#cartItems").html("");
+			$.ajax({
+				// url: BASE_URL + "/sessionCartApp",
+				url: BASE_URL + "/sessCartApp2",
+				type: "POST",
+				data: 'my-tok=' + localStorage.getItem('myTOK'),
+				crossDomain: true,
+				success: function (response) {
+					response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+
+					// if (Array.isArray(response)) {
+
+					if (response.myTable > 0 && response.myTable != "NONE") {
+						$("#homecollect-tab").html("TO TABLE " + response.myTable);
+						$('#paycard').show();
+						$('#paycash').show();						
+
+					} else {
+						$("#homecollect-tab").html("COLLECT AT " + response.orderTime);
+						$('#paycard').show();	
+						document.getElementById("paycard").innerText = "CHECKOUT";		
+					}
+
+					if (response.products) {
+
+						$("#emptyCartTxt").css("display", "none");
+						$("#cartLay").css("display", "block");
+
+
+						// var totalPrice = 0.00;
+						$.each(response.products, function (i, item) {
+							console.log(item);
+
+							if (item.OrderTags != null && item.OrderTags != "") {
+
+								var taglist = "<span style='display: flex;flex-wrap: wrap;' onclick=\showPopup(" + item.Id + "," + item.PortionID + "," + item.ro + ",'" + item.addtagId + "')\><span style='border: 1px solid black;border-radius: 20px;padding: 2px 3px;font-size: 12px;margin-right: 5px;height: 25px;width: 25px;text-align: center;'><i class='fas fa-pen'></i></span><span>" + (item.OrderTags).split(",").join("<br>") + "</span></span>";
+							} else {
+								taglist = "";
+							}
+
+							// totalPrice = (parseFloat(totalPrice) + parseFloat(item.txttotal)).toFixed(2);
+							$("#cartItems").append(
+
+								"<div style='border:1px solid #dce1e7; border-width:0px 0px 1px 0px;' class='row py-4 my-1'>" +
+								"<div class='col-8'>" +
+								"<span style='font-size: 22px;font-weight: 500;'>" + item.Name + "</span><br>" +
+								"<span style='font-size: 16px;'><span>£" + parseFloat(item.txttotal).toFixed(2) + "</span></span>" +
+								"<br>" + taglist + "</div>" +
+								"<div class='d-flex justify-content-end col-4' style=''>" +
+								"<div style='font-size: 14px;' class=''>" +
+								"<span style='border: 1px solid black;padding: 1px 3px;border-radius: 50%;font-size: 12px;' onclick=\changeQTY(" + item.ro + "," + item.Quantity + ",'minus')\>" +
+								"<i class='fas fa-minus'>" + "</i>" + "</span>" +
+								"<span style='font-size: 20px;font-weight: 500;background: #eac278;border-radius: 20px;padding: 5px 11px;margin:2px;' class=''>" + item.Quantity + "</span>" +
+								"<span style='border: 1px solid black;padding: 2px 4px;border-radius: 50%;font-size: 11px;' onclick=\changeQTY(" + item.ro + "," + item.Quantity + ",'add')\>" +
+								"<i class='fas fa-plus'></i></span>" +
+								"</div>" +
+								"</div>" +
+								"</div>"
+
+							);
+
+						});
+
+
+					} else {
+
+						$("#cartLay").css("display", "none");
+						$("#emptyCartTxt").css("display", "block");
+
+					}
+
+
+					// if(totalPrice > 0){
+					// 	$('#cartTotal').html("£"+totalPrice);
+					// }else{
+					// 	$('#cartTotal').html("Cart is Empty");
+					// }
+
+
+
+				}
+			});
+
+			//Amit Code  End
+
+		}
+
+
+		function ensureGuests() {
+			currGuests = parseFloat($('#guestsCart').val());
+			if (localStorage.getItem("tableSelected") != "noneSelected" && (isNaN(currGuests) || currGuests == 0)) {
+				ons.notification.prompt({ message: 'Number of guests', placeholder: "Enter guests here" })
+					.then(function (guests) {
+						$('#guestsCart').val(guests)
+					});
+
+			}
+
+		}
+		function verify_order(type) {
+			showModalCart();
+
+			localStorage.setItem("payMethod", type);
+			localStorage.setItem("address11", $('#address11').val());
+			localStorage.setItem("address12", $('#address12').val());
+			localStorage.setItem("address13", $('#address13').val());
+			localStorage.setItem("address14", $('#address14').val());
+
+			$.ajax({
+				url: BASE_URL + "/verify_order",
+				type: "POST",
+				async: false,
+
+				crossDomain: true,
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'distance=' + $('#address14').val() + '&address1=' + $('#address11').val() + '&address2=' + $('#address12').val() + '&address3=' + $('#address13').val() + '&address4=' + $('#address14').val(),
+				success: function (response) {
+					localStorage.setItem("myTOK", response.split('THISTOKEN')[1]);
+					response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+					if (response == 'FAILED') {
+						ons.notification.alert('Your cart is empty');
+					} else if (response == '1aa') {
+						ons.notification.alert('Please enter your full address');
+						if ($("#address11").val().replace(/ /g, '') == '')
+							$("#address11").val('');
+						if ($("#address12").val().replace(/ /g, '') == '')
+							$("#address12").val('');
+						if ($("#address13").val().replace(/ /g, '') == '')
+							$("#address13").val('');
+						if ($("#address14").val().replace(/ /g, '') == '')
+							$("#address14").val('');
+						return false;
+					} else if (response == '1a') {
+						ons.notification.alert('Please enter a  valid postcode that we deliver to');
+						return false;
+					} else if (response == '1b') {
+						ons.notification.alert('Your postcode is outside of our delivery radius');
+					} else if (response == '2') {
+						ons.notification.alert('The time you have selected is outside of our opening hours');
+					} else if (response == '3') {
+						ons.notification.alert('Please add more items, your total is less than our minimum order total');
+					} else if (response == '4') {
+						ons.notification.alert('Cannot place an order in the past!');
+					} else if (response == '0') {
+						localStorage.setItem("guestsCart", parseFloat($('#guestsCart').val()));
+						loadPage('confirm.html');
+					} else if (response == "5") {
+						$(".error-mag").html("<span style='color:red;'>Wrong Code</span><input type='hidden' id='couponDisc2' name='couponDisc2' value='0' />");
+						$(".couponDisc").html("<input type='hidden' id='couponDisc2' name='couponDisc2' value='0' />");
+						localStorage.setItem("guestsCart", parseFloat($('#guestsCart').val()));
+
+						loadPage('confirm.html');
+
+					}
+				}
+			});
+		}
+		function searchZip1() {
+
+			var snm = $("#address14").val();
+			var lq = "'";
+			var rq = "'";
+			var address = '';
+			var address1 = '';
+			var address2 = '';
+			var cnote = '';
+			snm = snm.trim().replace(/["~!@#$%^&*\(\)+=`{}\[\]\|\\:;'<>,.\/?"\t\r\n]+/g, '');
+			if (snm != '') {
+				attachdata = "";
+				$.ajax({
+					type: "POST",
+
+					url: BASE_URL + "/checkaddress",
+					data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'postcodecheck=' + snm,
+					success: function (data) {
+						localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+						data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+						if (data == "NONE FOUND") {
+							$("#address4").val('');
+							document.getElementById("address14").focus();
+							ons.notification.alert("No addresses found");
+
+						}
+						else {
+							//attachdata +="<ul>";
+							var j = 1;
+
+							p = data;
+
+							var addr = p['Addresses'][0].split(',');
+							if (addr[0].concat(addr[1]).replace(/ /g, '') != '')
+								document.getElementById('address11').value = addr[0].concat(addr[1]);
+							if (addr[2].concat(addr[3]).replace(/ /g, '') != '')
+								document.getElementById('address12').value = addr[2].concat(addr[3]);
+
+							if (addr[4].concat(addr[5]).replace(/ /g, '') != '')
+								document.getElementById('address13').value = addr[4];
+							// document.getElementById('address14').value=$("#searchzip1").val();
+							$('#address11').focus();
+							$('#address12').focus();
+
+							$('#address13').focus();
+						}
+
+					},
+					error: function (xhr, textStatus, errorThrown) {
+						//	$("#searchzip1").val('');
+						ons.notification.alert("No addresses found");
+					}
+				})
+			}
+			else {
+				ons.notification.alert("Please enter a postcode to search for!");
+			}
+
+		}
+		function gratiPay() {
+			document.querySelector('#showTips').show();
+
+
+		}
+	</script>
+	<!-- <ons-toolbar>
+		<div class="left">
+			<ons-toolbar-button onclick="openMenu()">
+				<ons-icon icon="md-menu"></ons-icon>
+			</ons-toolbar-button> 
+			<ons-back-button>Back</ons-back-button>
+		</div>
+		<div class="center">You've ordered...
+		</div>
+		<div class="right">
+			<ons-toolbar-button style="" onclick="emptyCart()">
+				<ons-icon icon="fa-undo"></ons-icon>
+			</ons-toolbar-button>
+
+			<ons-toolbar-button id="gratiPay" style="" onclick="gratiPay()">
+				<ons-icon icon="fa-gratipay"></ons-icon>
+
+			</ons-toolbar-button>
+		</div>
+	</ons-toolbar> -->
+
+	<div style="background: #f0e9dd !important;" class="fixed-top">
+
+		<div class="container ">
+			<div style="display: flex;justify-content: space-between;/*! padding: 0px 20px; */">
+				<div
+					style="/*! padding: 0px 10px; */border: 1px solid white;border-radius: 0px 0px 30px 30px;background: white;">
+					<!-- <span style="font-size: 30px;">Kanteen</span> -->
+					<img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 150px;"
+						onclick="goToStart()">
+				</div>
+				<div style="padding: 5px;">
+					<span>eat<b>POS</b></span>
+				</div>
+			</div>
+		</div>
+
+		<div class="container " style="padding-top: 0px !important;">
+			<div class="row ">
+				<div class="col-8 d-flex justify-content-start align-items-center">
+					<!-- <ons-back-button style="color: black !important;"></ons-back-button> -->
+					<ons-button style="background: transparent;box-shadow: none; font-size: 20px;"
+						onclick="loadPage('category.html')">
+						<i class="fas fa-arrow-left" style="color: black !important;"></i>
+					</ons-button>
+					<span class="py-3 pb-4" style="font-size: 24px;">Your Bag</span>
+				</div>
+				<div class="d-flex justify-content-end align-items-center col-4">
+					<ons-button onclick="emptyCart()"
+						style="background: transparent;box-shadow: none;vertical-align: middle;margin: auto;">
+						<ons-icon icon="fa-undo" style="color: black !important; font-size: 18px;"></ons-icon>
+					</ons-button>
+
+					<ons-button id="gratiPay" style="" onclick="gratiPay()"
+						style="background: transparent;box-shadow: none;vertical-align: middle;margin: auto;">
+						<ons-icon icon="fa-gratipay" style="color: black !important;"></ons-icon>
+
+					</ons-button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="container py-2" style="background: #fff !important;height: 80vh; margin-top: 175px !important;">
+		<div class="row">
+			<div class="col-12" style="background: #fff; padding-bottom: 50px;">
+				<span id="emptyCartTxt" style="text-align: center; display: none; font-size: 22px;">Your bag is
+					currently empty</span>
+				<div class="cartTabBtn" id="cartLay">
+					<ul class="nav nav-pills justify-content-center pt-2" id="myTab" role="tablist">
+						<li class="nav-item">
+							<a class="nav-link active" id="homecollect-tab" data-toggle="tab" href="#homecollect"
+								role="tab" aria-controls="homecollect" aria-selected="true"
+								style="border-radius: 20px">COLLECT AT 8:30</a>
+						</li>
+						<!-- <li class="nav-item">
+							<a class="nav-link" id="profiletable-tab" data-toggle="tab" href="#profiletable" role="tab"
+								aria-controls="profiletable" aria-selected="false"
+								style="border-radius: 0px 20px 20px 0px;">TO MY TABLE </a>
+						</li> -->
+					</ul>
+					<div class="tab-content" id="myTabContent">
+						<div class="tab-pane fade show active" id="homecollect" role="tabpanel"
+							aria-labelledby="homecollect-tab">
+							<div class="" id="cartItems">
+
+								<!-- <div style="border:1px solid grey; border-width:0px 0px 1px 0px;" class="row my-1">
+									<div class="col-7">
+										<h5>Coffe df</h5>
+										<p>taglist</p>
+									</div>
+									<div class="d-flex justify-content-between col-5" style="">
+										<div style="font-size: 14px;">
+											<span><i class="fas fa-minus-circle"></i></span>
+											<span
+												style="font-size: 20px;font-weight: 500;background: #eac278;border-radius: 20px;padding: 5px 10px;"
+												class="">2</span>
+											<span><i class="fas fa-plus-circle"></i></span>
+										</div>
+										<div style="font-size: 18px;"><span>3.14</span></div>
+									</div>
+								</div> -->
+
+								<!-- <div style="border:1px solid #dce1e7; border-width:0px 0px 1px 0px;"
+									class="row py-4 my-1">
+									<div class="col-7">
+										<span style="font-size: 22px;font-weight: 500;">Coffe df</span><br>
+										<span><span
+												style="border: 1px solid black;border-radius: 20px;padding: 2px 3px;font-size: 12px;margin-right: 5px;"><i
+													class="fas fa-pen"></i></span><span>taglist</span></span>
+									</div>
+									<div class="d-flex justify-content-between col-5" style="">
+										<div style="font-size: 14px;" class="">
+											<span
+												style="border: 1px solid black;padding: 1px 3px;border-radius: 50%;font-size: 12px;"><i
+													class="fas fa-minus"></i></span>
+											<span
+												style="font-size: 20px;font-weight: 500;background: #eac278;border-radius: 20px;padding: 5px 10px;"
+												class="">2</span>
+											<span
+												style="border: 1px solid black;padding: 2px 4px;border-radius: 50%;font-size: 11px;"><i
+													class="fas fa-plus"></i></span>
+										</div>
+										<div style="font-size: 16px;"><span>3.14</span></div>
+									</div>
+								</div> -->
+							</div>
+						</div>
+						<!-- <div class="tab-pane fade" id="profiletable" role="tabpanel" aria-labelledby="profiletable-tab">
+							<div class="" id="cartItemsTable">
+
+								<div style="border:1px solid #dce1e7; border-width:0px 0px 1px 0px;"
+									class="row py-4 my-1">
+									<div class="col-7">
+										<span style="font-size: 22px;font-weight: 500;">Coffe df</span><br>
+										<span><span
+												style="border: 1px solid black;border-radius: 20px;padding: 2px 3px;font-size: 12px;margin-right: 5px;"><i
+													class="fas fa-pen"></i></span><span>taglist</span></span>
+									</div>
+									<div class="d-flex justify-content-between col-5" style="">
+										<div style="font-size: 14px;" class="">
+											<span
+												style="border: 1px solid black;padding: 1px 3px;border-radius: 50%;font-size: 12px;"><i
+													class="fas fa-minus"></i></span>
+											<span
+												style="font-size: 20px;font-weight: 500;background: #eac278;border-radius: 20px;padding: 5px 10px;"
+												class="">2</span>
+											<span
+												style="border: 1px solid black;padding: 2px 4px;border-radius: 50%;font-size: 11px;"><i
+													class="fas fa-plus"></i></span>
+										</div>
+										<div style="font-size: 16px;"><span>3.14</span></div>
+									</div>
+								</div>
+
+							</div>
+						</div> -->
+
+
+
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div style="margin-top:10px; display: none; " id="theCart" class="theCart">
+	</div>
+
+	<div id="theAddress" style="text-align:center;display:none" class="">
+		<div id="showCharge"></div>
+
+		<form autocomplete="off">
+			<p>
+				<ons-input input-id="address11" placeholder="House number / name, street" modifier="underbar">
+				</ons-input>
+			</p>
+			<p>
+				<ons-input input-id="address12" placeholder="Town" modifier="underbar"></ons-input>
+			</p>
+			<p>
+				<ons-input input-id="address13" placeholder="City" modifier="underbar"></ons-input>
+			</p>
+			<p>
+				<ons-input input-id="address14" placeholder="" modifier="underbar"></ons-input>
+			</p>
+		</form>
+		<ons-button modifier="outline" onclick="searchZip1()">Lookup address</ons-icon>
+		</ons-button>
+
+	</div>
+
+	<ons-bottom-toolbar
+		style="padding-top:5px; margin-bottom: 60px; background:transparent !important; min-height: 70px !important; display: flex; justify-content: end;">
+		<div class="row px-2" style="width: 100%;">
+			<div class="col-12 d-flex justify-content-end px-0">
+				<ons-button class="toolbar-button toolbar-button--outline" id="paycash"
+					onclick="verify_order('cash_payment')"
+					style="display:none;margin:10px 25px; border-radius:20px; padding: 2px 15px;border-width: 0px;font-size: 16px;font-weight: 500;color: #131414 !important;	background-color: #eac278 !important;">
+					PAY CASH
+				</ons-button>
+
+
+
+				<ons-button class="toolbar-button toolbar-button--outline" id="paycard"
+					onclick="verify_order('card_payment')"
+					style="display:none;margin:10px 0px; border-radius:20px; padding: 2px 15px;border-width: 0px;font-size: 16px;font-weight: 500;color: #131414 !important;	background-color: #eac278 !important;">
+					PAY CARD
+					<!-- <ons-icon icon="fa-credit-card"></ons-icon> -->
+				</ons-button>
+				<!-- <ons-toolbar-button id="cartTotal" style="color:black;"></ons-toolbar-button> -->
+			</div>
+		</div>
+	</ons-bottom-toolbar>
+
+	<ons-bottom-toolbar>
+
+		<div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a" id="homchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img id="homeimg" src="asset/Icons/Home.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')">
+				<input type="radio" name="tabbar-a" id="ordchk" checked="checked">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img id="ordimg" src="asset/Icons/Order - Yellow.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px; color: #eac278 !important;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a" id="accchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img id="accimg" src="asset/Icons/Account - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ACCOUNT</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a" id="otrchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img id="otrimg" src="asset/Icons/Other - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+	</ons-bottom-toolbar>
+
+	<ons-modal id="showModalCart" direction="up">
+
+		<div style="text-align: center">
+			<p>
+				<ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+			</p>
+		</div>
+	</ons-modal>
+
+
+	<ons-dialog id="showTips">
+		<div style="height:auto;text-align: center; padding: 10px;overflow-y:scroll">
+
+			<div style="text-align: center">
+				<p>
+					<ons-button onclick="addTip(5)">5% tip</ons-button>
+				</p>
+				<p>
+					<ons-button onclick="addTip(10)">10% tip</ons-button>
+				</p>
+				<p>
+					<ons-button onclick="addTip(15)">15% tip</ons-button>
+				</p>
+				<p>
+					<ons-button onclick="addTip(20)">20% tip</ons-button>
+				</p>
+			</div>
+
+			<ons-button onclick="hideLoginModal('showTips')">No thanks</ons-button>
+
+		</div>
+	</ons-dialog>
+
+</ons-page>

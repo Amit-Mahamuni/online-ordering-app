@@ -1,0 +1,562 @@
+<ons-page id="orderTags">
+	<style>
+		.counttags .list-item__top,
+		.tagtitle {
+			font-weight: 500 !important;
+			font-size: 16px !important;
+			color: #131414 !important;
+		}
+
+		.counttags .expandable-content span {
+			/* margin: 5px 0px; */
+			padding: 0px 7px;
+			/* border: 1px solid #f2f2f2;
+			border-width: 0px 2px 0px 0px; */
+		}
+
+		.counttags .expandable-content span:nth-last-child() {
+			border-width: 0px 0px 0px 0px;
+		}
+
+		.counttags .list-item.expanded>.list-item__expandable-content {
+			display: flex;
+			flex-wrap: wrap;
+		}
+
+		.activeTag {
+			font-weight: 400;
+			color: #131414;
+			background-color: #eac278;
+			padding: 5px 10px;
+			border-radius: 5px;
+		}
+
+		.inactiveTag {
+			font-weight: 400;
+			color: #131414;
+			background-color: #f2ebdf;
+			padding: 5px 10px;
+			border-radius: 5px;
+		}
+
+		.counttags .checkbox--material,
+		.counttags .radio-button--material {
+			display: none;
+		}
+
+		#bckBtn {
+			display: flex;
+		}
+
+		.back-button__icon {
+			fill: #131414;
+			vertical-align: top;
+			width: 14px;
+
+		}
+
+		/* .checkbox__input:checked ~ .inactiveTag{
+			font-weight: 400;
+			color: #131414 !important;
+			background-color: #eac278 !important;
+			padding: 5px 10px;
+			border-radius: 5px;
+		} */
+	</style>
+	<script>
+
+		ons.getScriptPage().onShow = function () {
+			var tag1 = document.querySelector('#tagList');
+			//	console.log(prodList);
+			tag1.innerHTML = '<div style="margin: 20px auto; width: 320px;"><p>Loading stuff...</p><ons-progress-circular value="10"></ons-progress-circular></div>';
+			prod = mynav.topPage.data.id;
+			port = mynav.topPage.data.portid;
+			defaultMods = mynav.topPage.data.defaultMods;
+
+			getTags(prod, port, defaultMods);
+
+
+
+		};
+
+		function submitTags() {
+			var idArray = [];
+
+			$('.getTag').each(function () {
+				if ($(this).prop("checked")) {
+					idArray.push($(this).find("input").prop("id").split("-")[1]);
+				}
+			});
+
+			row_id = localStorage.getItem("ro");
+			row_id = typeof row_id == "undefined" ? "-1" : row_id;
+			var UpData = 'tempid=' + row_id + '&addtagId=' + idArray;
+			updateTempOrder(UpData);
+		}
+
+		function updateTempOrder(data) {
+			$.ajax({
+				url: BASE_URL + "/UpdateTempOrder",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + data,
+				crossDomain: true,
+				success: function (response) {
+					localStorage.setItem("myTOK", response.split('THISTOKEN')[1]);
+					response = response.split('THISTOKEN')[0]; response = JSON.parse(response);
+					if (response == 'OK') {
+						ons.notification.toast('<span style="color:black !important;">Done</span>', { timeout: 1000, animation: 'ascend' });
+						mynav.popPage();
+						//loadPage('category.html');
+					} else {
+						ons.notification.alert(response);
+					}
+				}
+			});
+		}
+
+		//Amit Code to make tag color change
+		function makeTagCheak(pTagId, pos) {
+
+			//pos = 1 checkbox else 0 = radio
+
+			if (pos == 1) {
+
+				if ($("#tagId-" + pTagId + " #label" + pTagId).hasClass("activeTag")) {
+					$("#tagId-" + pTagId + " #label" + pTagId).removeClass("activeTag");
+					$("#tagId-" + pTagId + " #label" + pTagId).addClass("inactiveTag");
+
+				} else if ($("#tagId-" + pTagId + " #label" + pTagId).hasClass("inactiveTag")) {
+					$("#tagId-" + pTagId + " #label" + pTagId).addClass("activeTag");
+					$("#tagId-" + pTagId + " #label" + pTagId).removeClass("inactiveTag");
+
+				}
+
+			} else if (pos == 0) {
+
+				$('.getTag').each(function () {
+
+					var radId = $(this).find("input").prop("id").split("-")[1];
+
+					if (radId == pTagId) {
+						
+
+						$("#tagId-" + pTagId + " #label" + pTagId).removeClass("inactiveTag");
+						$("#tagId-" + pTagId + " #label" + pTagId).addClass("activeTag");
+
+
+					} else {
+
+						$("#tagId-" + radId + " #label" + radId).addClass("inactiveTag");
+						$("#tagId-" + radId + " #label" + radId).removeClass("activeTag");
+
+					}
+
+				});
+
+			}
+		}
+
+		function getTags(prod, port, defaultMods) {
+			var tag1 = document.querySelector('#tagList');
+			//	console.log(prodList);
+			$.ajax({
+				url: BASE_URL + "/getOrderTags",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'portid=' + port + '&id=' + prod,
+				crossDomain: true,
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+					defaultModsArray = defaultMods.split(",");
+
+					if (data == "NO1") {
+						ons.notification.alert("No options for this item");
+						loadPage('category.html');
+						return;
+
+					}
+					if (data == "NO") {
+						ons.notification.alert("No options for this item");
+						loadPage('category.html');
+						return;
+
+					}
+					var allTags = "<span>";
+					allTags += '<ons-list expandable style="width:100% ; style="color: #131414;" class="tagList1">';
+					i = 0;
+					data.group.forEach(groups => {
+
+						// if (i % 2 == 0) {
+						// 	colourStyle = "color:var(--main-2) !important"
+						// } else {
+						// 	colourStyle = "color:var(--main-5) !important"
+						// }
+
+						colourStyle = ""
+						i++;
+						if (i == 1)
+							exp = "expanded";
+						else
+							exp = "";
+						if (groups.Compulsory == 1) {
+							ast = " *";
+
+						} else {
+
+							ast = "";
+						}
+						if (groups.FreeTagging == 0) {
+							checkbox = "checkbox";
+							posType = 1;
+						}
+						else {
+							checkbox = "radio";
+							posType = 0;
+						}
+
+						allTags += '<ons-list-item expandable style="width:100%;padding:0px;' + colourStyle + '" class=" tagList1 ' + exp + '"  >' + groups.Name + ast + '<div class="expandable-content">';
+
+
+						data.tag[groups.Id].forEach(tags => {
+							//console.log (defaultModsArray);
+							if (defaultModsArray.includes(tags.oId)) {
+								//alert (tags.oId);
+								tagChecked = " checked=checked";
+								var tagCheck = "activeTag";
+
+							} else {
+								tagChecked = "";
+								tagCheck = "inactiveTag";
+							}
+							if (defaultModsArray[0] == "0" && tags.isSelected == 1) {
+								tagChecked = " checked=checked";
+								tagCheck = "activeTag";
+							}
+
+							allTags += ' <span id="tagId-' + tags.oId + '" ><label class="left" > <ons-' + checkbox + tagChecked + ' class="getTag" modifier="material" input-id="tag-' + tags.oId + '" name="' + groups.Name + '" val="' + tags.oId + '"></ons-' + checkbox + '></label> <label style="' + colourStyle + '" for="tag-' + tags.oId + '" class="center ' + tagCheck + '" id="label' + tags.oId + '" >' + tags.oTag + '</label></span>';
+
+
+						});
+						allTags += '</div>';
+						allTags += '</ons-list-item>';
+
+
+					});
+					allTags += '</ons-list>';
+
+					allTags += "</span>";
+
+					tag1.innerHTML = '';
+					//console.log(ons.createElement(allTags));
+					//alert ("true");
+					tag1.appendChild(ons.createElement(allTags));
+
+
+					//Amit Code to update name and img
+					$("#ProTitle").html(data.product.Name);
+					$("#ProDetail").html(data.product.description);
+					$("#ProPrice").html(parseFloat(data.product.Price).toFixed(2));
+
+
+
+
+					if (data.product.allergen != null) {
+						var getAllergens = "";
+						var allergensProduct = data.product.allergen.split(",");
+						$.each(allergensProduct, function (i, item) {
+							if (parseInt(item) > 0) {
+								getAllergens += allergens.find(x => x.id === item).name + ' - <img class="allergen" style="max-width:20px; margin:2px; display:inline-block; border-radius: 25px; background: ' + allergens.find(x => x.id === item).color + '" title="' + allergens.find(x => x.id === item).name + '" src="https://online.bb01.net/' + allergens.find(x => x.id === item).image + '"><br>';
+							}
+						});
+						$("#tagAllergens").html(getAllergens);
+					} else {
+						$("#tagAllergens").html("Nutrition");
+					}
+
+					// $("#secDecAllg").html(getAllergens);
+
+					if (data.product.second_desc) {
+						$("#second_desc").html("");
+						$("#second_desc").append("<table><tbody>");
+						$.each((data.product.second_desc).split(","), function (i, item) {
+
+							$("#second_desc").append(
+								'<tr><td style="padding:0px 20px;">' + item.split(":")[0] + '</td>' +
+								'<td>' + item.split(":")[1] + '</td></tr>'
+							);
+
+						});
+						$("#second_desc").append("</table></tbody>");
+					} else {
+						$("#second_desc").html("<span style='padding-left: 20px;'>Nutritions</span>");
+					}
+
+
+
+					if (data.product.image != "") {
+						$('#ProBg').css('background-image', "url(https://live.bb01.net/back/uploads/" + data.product.image + ")");
+					} else {
+						$('#ProBg').css('background-image', "url(" + localStorage.getItem("logo_url") + ")");
+					}
+
+
+				}
+			});
+
+
+		}
+
+	</script>
+	<!-- <ons-toolbar>
+		<div class="left">
+			<ons-toolbar-button onclick="openMenu()">
+				<ons-icon icon="md-menu"></ons-icon>
+			</ons-toolbar-button>
+			<ons-back-button>Back</ons-back-button>
+		</div>
+		<div class="center">Select your options!</div>
+		<div class="right">
+			<ons-toolbar-button onclick="findlist()"></ons-toolbar-button>
+		</div>
+	</ons-toolbar> -->
+
+	<div id="ProBg" class="fixed-top" style="background-color: rgb(204, 204, 204);background-position-x: center;background-position-y: center;background-repeat: no-repeat;background-attachment: scroll;	background-image: url('asset/img/home-bg.png');
+		background-size: cover;	background-origin: padding-box;	background-clip: border-box;">
+
+		<div class="container ">
+			<div style="display: flex;justify-content: space-between;/*! padding: 0px 20px; */">
+				<div
+					style="/*! padding: 0px 10px; */border: 1px solid white;border-radius: 0px 0px 30px 30px;background: white;">
+					<!-- <span style="font-size: 30px;">Kanteen</span> -->
+					<img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 150px;"
+						onclick="goToStart()">
+				</div>
+				<div>
+					<span>eat<b>POS</b></span>
+				</div>
+			</div>
+		</div>
+
+		<div class="container py-5" style="padding: 140px 0px !important;">
+			<div class="row ">
+				<div class="col-8 d-flex justify-content-start align-items-center">
+					<!-- <ons-button style="background: transparent;box-shadow: none; font-size: 20px;"
+						onclick="loadPage('category.html')">
+						<i class="fas fa-arrow-left" style="color: black !important;"></i>
+					</ons-button> -->
+					<!-- <span class="py-2" style="style="font-size: 22px;font-weight: 500;"">Hot Drink (5)</span> -->
+				</div>
+				<div class="d-flex justify-content-end align-items-center col-4">
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="container py-2" style="background: #ffff;margin-top: 360px;">
+		<div class="row">
+			<div class="col-12">
+				<div>
+
+
+					<div class="d-flex justify-content-start align-items-center" style="padding: 10px 0px;">
+						<ons-back-button id="bckBtn"
+							style="display: inline-block;border: 0px solid #eac278;box-shadow: none;background: #eac278;padding: 12px 5px 12px 10px; border-radius: 0px 10px 10px 0px;margin: 0px 5px 0px -20px;color: #131414;max-height: 40px;display: flex !important;">
+						</ons-back-button>
+
+						<!-- <button
+							style="border: 0px solid #eac278;box-shadow: none; background: #eac278; padding: 4px 10px; border-radius: 0px 10px 10px 0px; margin: 0px 5px 0px -20px;">b</button> -->
+						<div class="w-100">
+							<div class="w-100 d-flex justify-content-between"><span
+									style="font-size: 26px;font-weight: 500;/*! padding: 10px 0px; */"
+									id="ProTitle">Product
+									Title</span>
+								<span style="font-size: 26px;font-weight: 500;"><span
+										style="font-size: 16px;padding: 4px;vertical-align: top;">£</span><span
+										id="ProPrice">12.00</span></span>
+							</div>
+
+						</div>
+					</div>
+
+					<!-- <div class="d-flex justify-content-between" style="padding: 10px 0px;">
+						<span style="font-size: 26px;font-weight: 500;/*! padding: 10px 0px; */" id="ProTitle">Product
+							Title</span>
+						<span style="font-size: 26px;font-weight: 500;"><span
+								style="font-size: 16px;padding: 4px;vertical-align: top;">£</span><span
+								id="ProPrice">12.50</span></span>
+					</div> -->
+
+					<div class="pl-4"
+						style="border: 1px solid #dfdfdf;padding: 0px 0px 20px 0px;border-width:0px 0px 1px 0px;">
+						<span id="ProDetail">Our silky Faxctory Blend roast, balanced with steamed milk.</span>
+					</div>
+				</div>
+
+				<div class="pl-3">
+					<div id="tagList" class="counttags"
+						style="border: 1px solid #dfdfdf;padding: 0px 0px 7px 0px;border-width:0px 0px 1px 0px; color:#131414;">
+					</div>
+
+					<div id="secDecList">
+						<div style="border: 1px solid #dfdfdf;padding: 20px 0px 7px 0px;border-width:0px 0px 1px 0px;">
+							<span class="tagtitle" style="font-size:18px; font-weight:500;"
+								id="tagAllergens">Nutrition</span><br>
+							<span id="second_desc"></span><br><br>
+						</div>
+					</div>
+					<div id="secDecList1">
+						<div style="border: 1px solid #dfdfdf;padding: 20px 0px 7px 0px;border-width:0px 0px 1px 0px;">
+							<span class="tagtitle2" style="font-size:18px; font-weight:500;"
+								id="tagAllergens">Allergens</span><br>
+							<span id="second_desc2" style="padding-left: 20px;">No Allergens</span><br><br>
+						</div>
+					</div>
+
+
+					<!-- <div id="tagListNew">
+						<div>
+							<span class="descTitle tagtitle" id="">Size</span><br>
+							<div>
+								<label class="checkbox">
+									<input type="checkbox" class="checkbox__input">
+									<div class="checkbox__checkmark"></div>
+									Small
+								</label>
+								<label class="checkbox">
+									<input type="checkbox" class="checkbox__input">
+									<div class="checkbox__checkmark"></div>
+									Medium
+								</label>
+								<label class="checkbox">
+									<input type="checkbox" class="checkbox__input">
+									<div class="checkbox__checkmark"></div>
+									Large
+								</label>
+							</div>
+						</div>
+					</div> -->
+
+					<!-- <span class="descTitle tagtitle">Size</span><br>
+					<span>Small | Medium | Large</span><br><br>
+
+					<span class="descTitle tagtitle">Syrups</span><br>
+					<span>Vanilla | Toffee | Nut | Caramel</span><br><br>
+
+					<span class="descTitle tagtitle">Milk &amp; Dailry Alternatives</span><br>
+					<span>Whole Milk | Semi-skimmed | Oat | Soya</span><br><br>
+
+					<span class="descTitle tagtitle">Expresso Options</span><br>
+					<span>1 Shot | 2 Shot | 4 Shot</span><br><br> -->
+					<!-- 
+					<span class="tagtitle" style="font-size:18px; font-weight:500;">Nutrition &amp; Allergens</span>
+					<table>
+						<tbody>
+							<tr>
+								<td>Size</td>
+								<td>16g</td>
+							</tr>
+							<tr>
+								<td>Calories</td>
+								<td>170 Cal</td>
+							</tr>
+							<tr>
+								<td>Fat</td>
+								<td>5.8g</td>
+							</tr>
+							<tr>
+								<td>Protian</td>
+								<td>1.2g</td>
+							</tr>
+						</tbody>
+					</table> -->
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+
+	<!-- <div id="tagList" class="counttags">
+	</div> -->
+	<!-- <ons-bottom-toolbar>
+		<div class="center"></div>
+		<div class="right">
+			<ons-toolbar-button>
+				<ons-button style="padding:5px" onclick="submitTags()">Add to cart</ons-button>
+
+			</ons-toolbar-button>
+		</div>
+	</ons-bottom-toolbar> -->
+
+	<ons-fab position="bottom center" class="fixed-btm-bag" onclick="loadPage('cart.html')"
+		style="transform: translate3d(0px, 0px, 0px) scale(1);width: 50px !important;height: 50px !important;">
+		<!-- <ons-icon style="color:var(--main-2)" icon="fa-shopping-cart"></ons-icon> -->
+		<img src="asset/Icons/shopping bag.png" alt="" srcset=""
+			style="height: 35px;padding: 0px 0px 5px 0px; margin: 0px 0px 7px 0px;">
+	</ons-fab>
+
+	<ons-bottom-toolbar
+		style=" padding-top:5px; margin-bottom: 60px; background:transparent !important; min-height: 0px !important; ">
+		<div class="d-flex justify-content-end" style="padding:5px">
+			<ons-button class="toolbar-button toolbar-button--outline" onclick="submitTags()"
+				style="background: #eac278;color: black !important;padding: 2px 20px;font-weight:500;border: 1px solid #eac278;border-radius: 20px;font-size: 15px;">
+				ADD TO BAG
+			</ons-button>
+		</div>
+	</ons-bottom-toolbar>
+
+	<ons-bottom-toolbar>
+		<div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a" id="homchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img id="homeimg" src="asset/Icons/Home.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')">
+				<input type="radio" name="tabbar-a" id="ordchk" checked="checked">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img id="ordimg" src="asset/Icons/Order - Yellow.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px; color: #eac278 !important;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a" id="accchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img id="accimg" src="asset/Icons/Account - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ACCOUNT</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a" id="otrchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img id="otrimg" src="asset/Icons/Other - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+	</ons-bottom-toolbar>
+
+</ons-page>

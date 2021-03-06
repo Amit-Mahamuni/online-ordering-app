@@ -1,0 +1,110 @@
+<ons-page id="pay">
+   <meta name="viewport"
+      content="initial-scale=1, width=device-width, height=device-height, viewport-fit=cover,user-scalable=0">
+
+   <style>
+      #theAddress ons-input {}
+   </style>
+   <script>
+
+      ons.getScriptPage().onShow = function () {
+         formData = mynav.topPage.data.payForm;
+         redirectToPay(formData);
+
+      };
+      function redirectToPay(formData) {
+         console.log(formData);
+         var prodList = document.querySelector('#payBox');
+         $('#payBox').html(formData);
+      }
+
+      window.addEventListener("message", receiveMessage, false);
+
+      function receiveMessage(event) {
+         if (event.data == "test")
+            mynav.resetToPage("receipt.html");
+      }
+
+      function resetStart() {
+         mynav.resetToPage('start.html', {
+            pop: true
+         });
+
+
+      }
+
+      function repeatViva() {
+         document.querySelector('#payModal').show();
+         $('#useLastButton').attr("disabled", "true");
+
+         $.ajax({
+            url: BASE_URL + "/processViva?isTry=1",
+            type: "POST",
+
+            crossDomain: true,
+
+            data: 'my-tok=' + localStorage.getItem('myTOK'),
+            success: function (data) {
+               localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+               data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+
+               if (data == "OK") {
+
+                  mynav.resetToPage("receipt1.html");
+                  document.querySelector('#payModal').hide();
+
+               } else {
+                  formdata = $('#payBox').html();
+                  $('#payBox').html(formData);
+                  ons.notification.toast('<span style="color:black !important;">oops failed</span>', { timeout: 1000, animation: 'ascend' });
+
+                  document.querySelector('#payModal').hide();
+
+
+               }
+               //	location.href = "<?=base_url()?>home/thanks?order_complete=true";
+            }
+         });
+
+
+
+      }
+   </script>
+   <div class="page__background" style="background:#fff"></div>
+   <ons-toolbar>
+      <div class="left">
+         <!-- <ons-toolbar-button onclick="openMenu()">
+            <ons-icon icon="md-menu"></ons-icon>
+         </ons-toolbar-button> -->
+         <!-- <ons-button onclick="resetStart()">Cancel</ons-button> -->
+      </div>
+      <div class="center" style="margin-left:20px; color: #131414;">Almost done
+      </div>
+      <div class="right">
+         <ons-toolbar-button style="display:none" onclick="findlist()">Placeholder</ons-toolbar-button>
+      </div>
+   </ons-toolbar>
+   <div id="payError" style="" class="theConfirm">
+   </div>
+   <div id="payBox" style="height:100%;margin:10px" class="theConfirm">
+   </div>
+   <ons-modal id="payModal" direction="up">
+
+      <div style="text-align: center">
+         <p>
+            <ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+         </p>
+      </div>
+
+   </ons-modal>
+
+   <!--<ons-bottom-toolbar>
+      <div class="center"></div>
+      <div class="right" style="padding:5px">
+         <ons-toolbar-button>
+			         <ons-button onclick="saveOrders()">Complete</ons-button>
+
+         </ons-toolbar-button>
+      </div>
+   </ons-bottom-toolbar>-->
+</ons-page>

@@ -1,0 +1,130 @@
+<ons-page id="category">
+<style>
+
+
+</style>
+   <script>
+ 
+
+ 
+     ons.getScriptPage().onShow = function() {
+        // Set up page's content or anything else
+        this.querySelector('ons-toolbar .center').innerHTML = 'Past orders';
+
+getOrders(); 
+console.log("getcat");
+      };    
+	 
+	  function getOrders(group,productList,active) {
+	  $('.aCategoryItem').each(function () {
+	  if ($(this).attr("data-cat") != group) {
+		$(this).removeClass("expanded");
+	  }
+	  
+	  });
+	  	var prodList = document.querySelector('#orderList');
+		//	console.log(prodList);
+			prodList.innerHTML ='<div style="margin: 20px auto; width: 320px;"><p>Loading stuff...</p><ons-progress-circular value="10"></ons-progress-circular></div>';
+	  	$.ajax({
+			url: BASE_URL + "/pastOrder",
+				type: "POST",
+				
+							crossDomain: true,
+				success: function (response) {
+					localStorage.setItem("myTOK",response.split('THISTOKEN')[1]);
+	  			response = response.split('THISTOKEN')[0];response = JSON.parse(response);
+				var catList = document.querySelector('#orderList');
+				catList.innerHTML = "";
+				//msg = JSON.parse(msg);
+				//currTicks =[];
+				i = 0;
+				response.forEach(name1 => {
+					i++;
+					if (i==1) 
+						exp = "";
+					else
+						exp = "";
+					catList.appendChild(ons.createElement('<ons-list-item  expandable  class="ordersExpanded aOrderItem '+exp+'"> <div style="width:100%"  onclick="getPastOrder(\''+name1.Ticket_Id+'\')"  class="left">' + name1.dated + ' '+name1.TicketNumber+  ' '+name1.paidStatus +'</div><div  id="order'+name1.Ticket_Id+'" class="expandable-content"></div></ons-list-item>')); 
+		
+				})
+		}
+		});
+	  
+	  
+	  }
+	  function getPastOrder(tickId) {
+	  
+		var prodList = document.querySelector('#order'+tickId);
+			  	$.ajax({
+			url: BASE_URL + "/pastorderdetailApp/"+tickId,
+				type: "POST",
+				
+							crossDomain: true,
+				success: function (data) {
+		
+					localStorage.setItem("myTOK",data.split('THISTOKEN')[1]);
+	  			data = data.split('THISTOKEN')[0];data= JSON.parse(data);
+				
+			allProducts ='<ons-list style="width:100%;padding-top:10px" class="categoryList">';
+				data.new_array.forEach(name1 => {
+					allProducts += '<ons-list-item>'+name1.MenuItemName+'</ons-list-item>'
+				
+				});
+				allProducts+='<ons-button style="margin:20px" onclick="repeatOrder(\''+tickId+'\')">Repeat order</ons-button>';
+				if (data.new_array[0].temp_review != "") {
+				
+				allProducts+='<ons-button style="margin:20px" onclick="getReviewModal(\''+data.new_array[0].temp_review+'\')">Review order</ons-button>';
+
+				
+				}
+			allProducts+='</ons-list>';
+			prodList.innerHTML="";
+			prodList.appendChild(ons.createElement(allProducts));
+		  
+		  
+		  
+		  
+				  }
+				  })
+		  }
+function getReviewModal(temp_review) {
+
+$('#temp_review_modal').val(temp_review);
+showLoginModal('reviewModal');
+}
+
+   </script>
+   <ons-toolbar>
+      <div class="left">
+         <ons-toolbar-button onclick="openMenu()">
+            <ons-icon icon="md-menu"></ons-icon>
+         </ons-toolbar-button>
+      </div>
+      <div class="center">About</div>
+      <div class="right">
+	
+
+      </div>
+   </ons-toolbar>
+   <h3>
+      Below are your past orders
+   </h3>
+   
+   <ons-list style="width:100%" id="orderList"></ons-list>
+
+   <ons-bottom-toolbar>
+      <div class="center"></div>
+      <div style="display:none" class="right" style="padding:5px" >
+ <ons-button onclick="loadPage('cart.html')">Finish and pay</ons-button>
+
+      </div>
+   </ons-bottom-toolbar>
+   
+   <ons-modal id="categoryModal" direction="up">
+  <div style="text-align: center">
+    <p>
+      <ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+    </p>
+  </div>
+</ons-modal>
+</ons-page>

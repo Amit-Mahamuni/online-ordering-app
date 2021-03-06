@@ -1,0 +1,49 @@
+<ons-page id="splash"">
+   <script>
+    
+     ons.getScriptPage().onInit = function() {
+
+        
+      }
+        
+            
+   </script>
+     <div class="page__background" style="background-color:#222021"></div>
+
+   
+   <div id="firstBranchForm" style="text-align: center; margin-top: 75px">
+   <img src="https://live.bb01.net/back/uploads/en2vi4vvnmgc8so8w8.png">
+
+      <p>
+         <ons-button onclick="startBranch()">Find your nearest branch</ons-button>
+      </p>
+	       
+      <p>
+         <ons-button onclick="startBranch()">Find your nearest branch</ons-button>
+      </p>
+	       
+      <p>
+         <ons-button onclick="startBranch()">Find your nearest branch</ons-button>
+      </p>
+  <p style="color:white"> Powered by  <img src="https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled3.svg"></p>
+
+   </div>
+    
+   <ons-modal id="startModal" direction="up">
+
+  <div style="text-align: center">
+    <p>
+      <ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+    </p>
+  </div>
+</ons-modal>
+   
+   <ons-bottom-toolbar>
+         <div class="center" style="padding:5px"> <ons-button style="display:none" id="showGoBack" onclick="goBack()">Go Back</ons-button></div>
+
+      <div class="right">
+      
+      </div>
+	  
+   </ons-bottom-toolbar>
+</ons-page>

@@ -1,0 +1,250 @@
+<ons-page id="meal-deal">
+<style>
+#theAddress ons-input {
+
+width:100%;
+}
+
+.catExpanded2 { background: #FFF; }
+.catExpanded2:nth-child(odd) { background: #CCC; }
+
+</style>
+   <script>
+ 
+     ons.getScriptPage().onInit = function() {
+	 //alert ("true");
+	  
+getDealApp(mynav.topPage.data.getProd);
+console.log(mynav.topPage.data);
+      };    
+	  
+	      ons.getScriptPage().onShow = function() {
+	 //alert ("true");
+idArrayDis =typeof  mynav.topPage.data.idArrayDis =="undefined" ? "0" : idArrayDis;
+idArray =typeof  mynav.topPage.data.idArray =="undefined" ? "0" : idArray;
+
+
+selectID =typeof  mynav.topPage.data.selectID =="undefined" ? "0" : selectID;
+if (idArray != "0") {
+	$("#"+selectID + " .tags").html(idArrayDis.join("<br>"));
+		$("#"+selectID + " .tagVal").val(idArray.join(","));
+
+}
+console.log(selectID);
+
+      };     
+	  function getDealApp(temp_review) {
+	//	alert (temp_review);
+
+		$.ajax({
+		url: BASE_URL + "/getDealApp",
+			type: "POST",
+			
+					data : 'my-tok=' +localStorage.getItem('myTOK') + '&' +'temp_review=' + temp_review,
+			success: function (data) {
+				localStorage.setItem("myTOK",data.split('THISTOKEN')[1]);
+	  			data = data.split('THISTOKEN')[0];data= JSON.parse(data);
+				
+				if (data == "FAILED") {
+				ons.notification.toast('Please select collection/delivery or order at table', { timeout: 1000, animation: 'ascend' });
+
+					mynav.resetToPage("start.html");
+				
+				}
+				var theReceipt = document.querySelector('#theDeal');
+				theReceipt.innerHTML = "";
+					$("#dealDesc").html(data.DealInfo.description);
+
+				
+				//msg = JSON.parse(msg);
+				//currTicks =[];
+				i = 0;
+				data.GroupCodes.forEach(cats => {
+						 if(i % 2 == 0) {
+						colourStyle="color:var(--main-2) !important";
+						bgStyle="background-color:var(--main-5) !important";
+												bgStyle2="background-color:var(--main-5) !important";
+
+					} else {
+colourStyle="color:var(--main-5) !important";
+						bgStyle="background-color:var(--main-2) !important";
+												bgStyle2="background-color:var(--main-5) !important";
+
+					}
+					if (i==1) 
+						exp = "";
+					else
+						exp = "";							
+						if (data.TagCompulsory[i] == 1) 
+						toSelect =  `<ons-select style="${bgStyle2}" class="itemVal" id="choose-sel" onchange="editSelects(this.value,\'dealList-${i}\',1)">`;
+					else 
+												toSelect =  `<ons-select style="${bgStyle2}"   class="itemVal" id="choose-sel"  onchange="editSelects(this.value,\'dealList-${i}\',0)">`;
+
+																toSelect  += `<option  value="noneSelected">Select your ${cats.name}</option>`;
+
+						data.AllProducts.forEach(prods => {
+   
+							if (prods.GroupCode == cats.Id) {
+							toSelect  += `<option data-allergens="" value="${prods.Id},${prods.pId},${i},${prods.allergen}">${prods.Name}</option>`;
+							
+							}
+						
+						});
+						toSelect += '</ons-select>';
+						
+						toSelectGlob = `<ons-list-item id="dealList-${i}" expandable style="${colourStyle};font-size:15px;font:weight:900" class="aCategoryItem catExpanded2 expanded">${cats.name}<div class="right"></div><div class="expandable-content">${toSelect}<div class="tags"></div><input class="tagVal" type="hidden"></div></ons-list-item>`;
+					theReceipt.appendChild(ons.createElement(`<ons-list-item style="${bgStyle}" id="dealList-${i}" expandable style="${colourStyle};font-size:12px;font:weight:900" class="aCategoryItem catExpanded2 expanded">#${i+1} ${cats.name}<div class="right"></div><div class="expandable-content">${toSelect}<div class="dealItemAllergens"></div><div class="tags"></div><input class="tagVal" type="hidden"></div></ons-list-item>`)); 
+					i++;
+					})
+					
+
+				}
+
+				
+			
+		});
+
+
+		//////////// get tax end ///////////////
+
+	}
+
+	  function editSelects(event1,delList,getTags) {
+	 // console.log(restDetails);
+		  event2 =event1.split(",");
+		  		allergensProduct = event2[3].split(",");
+				getAllergens='';
+		$.each(allergensProduct, function(i, item) {
+			if (parseInt(item)>0) {
+			getAllergens += allergens.find(x => x.id === item).name+' - <img class="allergen" style="max-width:20px; margin:2px; display:inline-block; border-radius: 25px; background: '+allergens.find(x => x.id === item).color+'" title="'+allergens.find(x => x.id === item).name+'" src="https://online.bb01.net/'+allergens.find(x => x.id === item).image+'"><br>';
+			}
+		});
+		$("#"+ delList + " .dealItemAllergens").html(getAllergens);
+		  if (getTags == 0)
+		  return;
+		  
+		  
+		  defaultMods = "0";
+	mynav.bringPageTop('orderTags-deal.html', {
+		data : {
+			id: event2[0],
+			portid: event2[1],
+			defaultMods:defaultMods,
+			selectID:delList,
+
+		}
+	});
+	}
+	
+	function submitDeal() {
+		document.querySelector('#startDealModal').show();
+		i=0;
+		allId = [];
+		allPort = [];
+		allTag = [];
+		finalProd = [];
+		isNotDone = false;
+		
+		$('.itemVal').each(function () {
+			itemSplit = $(this).find("select").children("option:selected").val().split(",");
+			itemName = $(this).find("select").children("option:selected").text();
+			if (itemName.includes("Select your")) {
+				ons.notification.alert("Please complete your deal");
+				isNotDone = true;
+						document.querySelector('#startDealModal').hide();
+
+				return false;
+			}
+				 
+			allId.push(itemSplit[0]);
+			allPort.push(itemSplit[1]);
+			
+			
+			
+			
+			i++;
+		});
+		if (isNotDone) {
+					document.querySelector('#startDealModal').hide();
+
+			return;
+		}
+		$('.tagVal').each(function () {
+			itemSplit = $(this).val();
+			allTag.push(itemSplit);
+		});
+		for (k in allId) {
+			makeProd = {};
+			makeProd.Id = allId[k];
+			makeProd.PortionID = allPort[k];
+			makeProd.tag = allTag[k];
+			finalProd.push(makeProd)
+		
+		}
+	
+		console.log(finalProd);
+		
+				$.ajax({
+		url: BASE_URL + "/addDealApp",
+			type: "POST",
+			
+					data : 'my-tok=' +localStorage.getItem('myTOK') + '&' +'arrayProduct=' + JSON.stringify(finalProd),
+			success: function (data) {
+				localStorage.setItem("myTOK",data.split('THISTOKEN')[1]);
+	  			data = data.split('THISTOKEN')[0];data= JSON.parse(data);
+				
+									document.querySelector('#startDealModal').hide();
+
+				mynav.popPage();
+		
+				
+					
+				}
+				
+			
+		});
+
+		
+	}
+		
+
+   </script>
+   <ons-toolbar>
+      <div class="left">
+         <ons-toolbar-button onclick="openMenu()">
+            <ons-icon icon="md-menu"></ons-icon>
+         </ons-toolbar-button>
+<ons-toolbar-button>
+            <ons-icon icon="fa-undo-alt" onClick="mynav.resetToPage('category.html')"></ons-icon>
+         </ons-toolbar-button>     
+		 </div>
+      <div class="center">
+	  Build your deal!
+</div>
+      
+   </ons-toolbar>
+      
+   <div id="dealDesc" style="text-align:center;margin-top:20px">
+  </div>
+  <ons-list id="theDeal" class="theDeal">
+   </ons-list>
+       <ons-modal id="startDealModal" direction="up">
+
+  <div style="text-align: center">
+    <p>
+      <ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+    </p>
+  </div>
+   
+</ons-modal>
+   <ons-bottom-toolbar>
+      <div class="center"></div>
+      <div class="right" style="padding:5px">
+         <ons-toolbar-button>
+			 <ons-button onclick="submitDeal()">Add your deal!</ons-button>
+     
+
+         </ons-toolbar-button>
+      </div>
+   </ons-bottom-toolbar>
+</ons-page>

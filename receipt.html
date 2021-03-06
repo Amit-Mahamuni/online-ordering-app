@@ -1,0 +1,301 @@
+<ons-page id="receipt">
+	<style>
+		#theAddress ons-input {
+			width: 100%;
+		}
+
+		.catExpanded2 {
+			background: #FFF;
+		}
+
+		/* .catExpanded2:nth-child(odd) {
+			background: #CCC;
+		} */
+	</style>
+	<script>
+
+		ons.getScriptPage().onShow = function () {
+			//alert ("true");
+			getTicket(localStorage.getItem("temp_review"));
+
+		};
+		ons.getScriptPage().onInit = function () {
+
+			var pullHook = document.getElementById('pull-hook');
+
+			pullHook.addEventListener('changestate', function (event) {
+				var message = '';
+
+				switch (event.state) {
+					case 'initial':
+						message = 'Pull to refresh';
+						break;
+					case 'preaction':
+						message = 'Release';
+						break;
+					case 'action':
+						message = 'Loading...';
+						mynav.resetToPage('receipt.html');
+						break;
+				}
+
+				pullHook.innerHTML = message;
+			});
+
+			pullHook.onAction = function (done) {
+				setTimeout(done, 1000);
+			};
+
+
+			//alert ("true");
+			$('#setLogo2').html('<img style="width:200px"  src="' + localStorage.getItem("logo_url") + '">');
+
+		};
+
+
+		function getTicket(temp_review) {
+			//	alert (temp_review);
+
+			$.ajax({
+				url: BASE_URL + "/getAppReceipt",
+				type: "POST",
+
+				data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'temp_review=' + temp_review,
+				success: function (data) {
+					localStorage.setItem("myTOK", data.split('THISTOKEN')[1]);
+					data = data.split('THISTOKEN')[0]; data = JSON.parse(data);
+
+					if (data[0].tableOrder == "0") {
+						ons.notification.alert("Oops - we can't find that order");
+						goToStart();
+						return false;
+					}
+
+					var theReceipt = document.querySelector('#theReceipt');
+
+					theReceipt.innerHTML = "";
+					if (!(data.length > 0)) {
+						ons.notification.alert("Woops, something went wrong");
+						return;
+
+					}
+					//msg = JSON.parse(msg);
+					//currTicks =[];
+					i = 0;
+					if (!(location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname == "")) {
+						$("#share").jsSocials({
+							shares: [{
+								share: "twitter",
+								text: "Just ordered " + data[0].MenuItemName,
+
+								label: "Tweet",
+								via: "eatPOS",
+								hashtags: "orderAtTable",
+							}, "facebook"],
+							text: "Just ordered " + data[0].MenuItemName,
+							showLabel: true,
+							showCount: true,
+						});
+					}
+					data.forEach(name1 => {
+						i++;
+						if (i == 1)
+							exp = "";
+						else
+							exp = "";
+						// if (i % 2 === 0)
+						// 	colorBG = "color:white";
+						// else
+						// 	colorBG = "color:black";
+
+						colorBG = "color:black !important; background:#fff !important;";
+
+						item_price = parseFloat((parseFloat(name1.Price) + parseFloat(name1.PriceTag)) * (1 + name1.taxRate / 100) * name1.Quantity).toFixed(2);
+						theReceipt.appendChild(ons.createElement('<ons-list-item data-cat="' + name1.MenuItemName + '" expandable style="' + colorBG + ';font-size:14px;font:weight:500" class="aCategoryItem catExpanded2 ' + exp + '">' + name1.Quantity + ' X ' + name1.MenuItemName + "<br>" + name1.OrderTags.split(",").join("<br>") + '<div class="right" style="font-size:16px">£' + item_price + '</div><div class="expandable-content"></div></ons-list-item>'));
+
+					})
+					if (parseFloat(data[0].tDiscount) > 0) {
+						theReceipt.appendChild(ons.createElement('<ons-list-item style="color:#131414 !important;background:#fff !important;font-weight:900" class="aCategoryItem catExpanded2 ' + exp + '">DISCOUNT<div class="right" style="font-size:18px">' + data[0].tDiscount + '%</div><div class="expandable-content"></div></ons-list-item>'));
+
+
+					}
+					if (parseFloat(data[0].abdiscount) > 0) {
+						theReceipt.appendChild(ons.createElement('<ons-list-item style="color:#131414 !important;background:#fff !important;font-weight:900" class="aCategoryItem catExpanded2 ' + exp + '">DISCOUNT<div class="right" style="font-size:18px">£' + parseFloat(data[0].abdiscount).toFixed(2) + '</div><div class="expandable-content"></div></ons-list-item>'));
+
+
+					}
+
+					theReceipt.appendChild(ons.createElement('<ons-list-item style="color:#131414 !important;background:#fff !important;font-weight:900" class="aCategoryItem catExpanded2 ' + exp + '">Total<div class="right" style="font-size:18px">£' + data[0].TotalAmount + '</div><div class="expandable-content"></div></ons-list-item>'));
+
+
+					if (data[0].payments.length > 0) {
+						data[0].payments.forEach(name1 => {
+							theReceipt.appendChild(ons.createElement('<ons-list-item style="color:white;font-weight:900" class="aCategoryItem catExpanded2 ' + exp + '">' + name1.Name + '<div class="right" style="font-size:18px">£' + name1.Amount + '</div><div class="expandable-content"></div></ons-list-item>'));
+
+
+
+						});
+
+
+					}
+
+
+
+					theReceipt.appendChild(ons.createElement('<ons-list-item style="background:white !important; color:#131414!important; font-weight:900" class="aCategoryItem catExpanded2 ' + exp + '">Balance<div class="right" style="font-size:18px">£' + data[0].RemainingAmount + '</div><div class="expandable-content"></div></ons-list-item>'));
+
+					//	theReceipt.appendChild(ons.createElement('<ons-button style="margin:5px" onclick="">Your order is '+data[0].stateTicket+'</ons-button>'));
+
+					if (data[0].temp_review_test != "") {
+
+						theReceipt.appendChild(ons.createElement('<ons-button style="background: #eac278; color: black;border-radius: 20px;font-weight: 500;font-size: 15px; margin:10px; padding: 3px 15px;text-transform: uppercase;" onclick="getReviewModal(\'' + data[0].temp_review + '\')">Review order</ons-button>'));
+
+					}
+					theReceipt.appendChild(ons.createElement('<ons-button style="background: #eac278; color: black;border-radius: 20px;font-weight: 500;font-size: 15px; margin:10px; padding: 3px 15px;text-transform: uppercase;" onclick="">' + data[0].paidStatus + '</ons-button>'));
+					if (data[0].tableOrder != "NO") {
+
+						theReceipt.appendChild(ons.createElement('<ons-button style="background: #eac278; color: black;border-radius: 20px;font-weight: 500;font-size: 15px; margin:10px; padding: 3px 15px;text-transform: uppercase;" onclick="">For table ' + data[0].tableOrder + '</ons-button>'));
+						$('#myCurrentTracking').hide();
+
+					}
+					var theReceipt = document.querySelector('#setState');
+
+					theReceipt.innerHTML = data[0].statePanel;
+					if (localStorage.getItem("del_enabled") == 1) {
+						$('#myCurrentTracking').attr("src", "https://live.bb01.net/online-api/home/lastLock2/5/" + temp_review)
+					} else {
+						$('#myCurrentTracking').hide();
+					}
+					if (data[0].Accepted == 0)
+						ons.notification.toast('<span style="color:black !important;">Awaiting acceptance/span>', { timeout: 1000, animation: 'fall' });
+					else if (data[0].stateTicket != "")
+						ons.notification.toast('<span style="color:black !important;">'+data[0].stateTicket+'</span>', { timeout: 1000, animation: 'fall' });
+
+
+				}
+			});
+
+
+			//////////// get tax end ///////////////
+			if (!(location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname == ""))
+				$('#socialModal').show();
+
+		}
+
+	</script>
+
+
+	<!-- <ons-toolbar>
+		<div class="left">
+			<ons-toolbar-button onclick="openMenu()">
+				<ons-icon icon="md-menu"></ons-icon>
+			</ons-toolbar-button>
+			<ons-toolbar-button>
+				<ons-icon icon="fa-undo-alt" onClick="goToStart()"></ons-icon>
+			</ons-toolbar-button>
+		</div>
+		<div class="center">
+			Order received...
+
+		</div>
+
+	</ons-toolbar> -->
+
+	<div style="background: #f0e9dd !important;" class="fixed-top">
+		<div class="container ">
+			<div style="display: flex;justify-content: space-between;/*! padding: 0px 20px; */">
+				<div
+					style="/*! padding: 0px 10px; */border: 1px solid white;border-radius: 0px 0px 30px 30px;background: white;">
+					<!-- <span style="font-size: 30px;">Kanteen</span> -->
+					<img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 150px;"
+						onclick="goToStart()">
+				</div>
+				<div style="padding: 5px;">
+					<span>eat<b>POS</b></span>
+				</div>
+			</div>
+		</div>
+		<div class="container py-3" style="padding-top: 0px !important;">
+			<span class="py-2" style="font-size: 22px;font-weight: 500;">Your Receipt</span>
+		</div>
+	</div>
+
+<div style="display:none !important;">
+	<ons-pull-hook id="pull-hook" style="display:none !important;">
+		Pull to refresh
+	</ons-pull-hook>
+</div>
+
+	<ons-modal id="socialModal" direction="up" style="background-color: rgba(0,0,0,.9)">
+		<ons-button onclick="$('#socialModal').hide();">X CLOSE</ons-button>
+
+		<h2>The hospitality industry is going through an unprecedented crisis, please click here to tweet/share on
+			Facebook to support this local business.</h2>
+		<div id="share">
+
+		</div>
+	</ons-modal>
+	<div id="setLogo2" style="text-align: center; margin-top: 20px; display: none;"></div>
+	<div id="setState" style="text-align: center; margin-top: 170px;margin-bottom:10px"></div>
+
+	<ons-list id="theReceipt" class="theReceipt" style="min-height: 70vh;">
+	</ons-list>
+	<iframe id="myCurrentTracking" style="width:100%" src=""></iframe>
+
+	<!-- <ons-bottom-toolbar>
+		<ons-row style="padding:10px">
+			<ons-col width="30%">
+			</ons-col>
+			<ons-col width="30%"> </ons-col>
+			<ons-col width="40%"> Powered by <img width=50
+					src="https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled3.svg">
+			</ons-col>
+		</ons-row>
+	</ons-bottom-toolbar> -->
+
+	<ons-bottom-toolbar>
+		<div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a"  id="homchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img id="homeimg" src="asset/Icons/Home.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')" >
+				<input type="radio" name="tabbar-a" id="ordchk" checked="checked">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img id="ordimg" src="asset/Icons/Order - Yellow.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px; color: #eac278 !important;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a" id="accchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img id="accimg" src="asset/Icons/Account - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ACCOUNT</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a" id="otrchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img id="otrimg" src="asset/Icons/Other - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+	</ons-bottom-toolbar>
+</ons-page>

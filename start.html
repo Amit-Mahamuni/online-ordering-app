@@ -1,0 +1,782 @@
+<ons-page id="start">
+	<style>
+		#dateSelect select,
+		#choose-table select {
+			background-color: transparent !important;
+			color: white;
+			font-weight: 600;
+			font-size: 16px;
+			text-align: left;
+			border: 2px solid white;
+			border-width: 0px 0px 2px 0px;
+			margin: 0px 0px 10px 0px;
+			border-radius: 0px;
+			width: max-content;
+			/* text-transform: uppercase; */
+
+		}
+
+		#currBranch {
+			color: white !important;
+		}
+
+		#hideCollection {
+			display: none !important;
+		}
+
+		.activebtnOrd {
+			color: #131414 !important;
+			background-color: #eac278 !important;
+		}
+
+		.inactivebtnOrd {
+			color: #fff !important;
+			background-color: #131414 !important;
+		}
+	</style>
+	<script>
+		function colourTone(c) {
+
+			c = c.substring(1);      // strip #
+			var rgb = parseInt(c, 16);   // convert rrggbb to decimal
+			var r = (rgb >> 16) & 0xff;  // extract red
+			var g = (rgb >> 8) & 0xff;  // extract green
+			var b = (rgb >> 0) & 0xff;  // extract blue
+
+			return luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per ITU-R BT.709
+
+		}
+		function showModal1() {
+			var modal = document.querySelector('#startModal');
+			modal.show();
+			setTimeout(function () {
+				modal.hide();
+			}, 1000);
+		}
+		ons.getScriptPage().onInit = function () {
+			// document.querySelector('#startModal').show();
+			load = load + 1;
+			/*  console.log(mynav.topPage.data);
+		isLogged = localStorage.getItem("logged");
+		console.log(isLogged);
+		if (isLogged != "true") { 
+		$('#loginform').show();
+		} else {
+		findlist();
+		$('#loginform').hide();
+		}*/
+			temp_review = localStorage.getItem("myTOK");
+			branchURL = BASE_URL + "/appLoad",
+				$.ajax({
+					method: "POST",
+					dateType: "json",
+					crossDomain: true,
+					url: branchURL,
+					data: 'my-tok=' + localStorage.getItem('myTOK') + '&' + 'temp_review=' + temp_review,
+				})
+					.done(function (msg1) {
+						localStorage.setItem("myTOK", msg1.split('THISTOKEN')[1]);
+						msg1 = msg1.split('THISTOKEN')[0];
+
+						//	privacy1 = 'I agree to the <a target="_blank" href="'+BASE_URL+'/privacy">privacy policy</a>';
+						//	privacy1 = privacy1.replace("home2","home");
+						//	$('#labelVehicle').html(privacy1);
+						msg = JSON.parse(msg1);
+						console.log(msg);
+
+						localStorage.setItem("min_order_without_charge", msg.misc.min_order_without_charge);
+
+						//localStorage.setItem("myTOK",msg.misc.myTOK);
+						localStorage.setItem("logo_url", msg.misc.logo_url);
+						localStorage.setItem("cash_enable", msg.misc.cash_enable);
+						localStorage.setItem("card_enable", msg.misc.card_enable);
+						del_options = msg.misc.app_type.split(",");
+						opt_in = msg.misc.opt_in;
+						opt_policy = msg.misc.opt_policy;
+
+						if (opt_in != 1) {
+							$('.optOptions').hide();
+						}
+						$('#optInText').html(opt_policy);
+
+						other_options = msg.misc.app_options.split(",");
+						localStorage.setItem("image_disable", other_options[0]);
+
+						localStorage.setItem("col_enabled", del_options[0]);
+						localStorage.setItem("del_enabled", del_options[1]);
+						localStorage.setItem("table_enabled", del_options[2]);
+						if (3 in del_options) {
+							localStorage.setItem("two_tone", del_options[3]);
+
+						} else {
+							localStorage.setItem("two_tone", 0);
+
+
+						}
+						if (4 in del_options) {
+							localStorage.setItem("hide_col", del_options[3]);
+
+						} else {
+							localStorage.setItem("hide_col", 1);
+
+
+						}
+
+						try {
+							if (typeof cordova.plugins.barcodeScanner.scan != "function") {
+								$('#takePic').remove();
+							}
+						} catch (e) {
+							$('#takePic').remove();
+						}
+
+
+
+						if (1 in other_options) {
+							if (other_options[1] != 2)
+								$('#loyaltyOpen2').remove();
+						}
+						if (2 in other_options) {
+							if (other_options[2] != 2)
+								localStorage.setItem("iconStart", 0);
+							else
+								localStorage.setItem("iconStart", 1);
+						} else {
+							localStorage.setItem("iconStart", 0);
+
+
+						}
+						if (3 in other_options) {
+							localStorage.setItem("limitOneDay", other_options[3]);
+
+						} else {
+							localStorage.setItem("limitOneDay", 1000);
+
+
+						}
+						if (4 in other_options) {
+							localStorage.setItem("hideCouponLoy", other_options[4]);
+
+						} else {
+							localStorage.setItem("hideCouponLoy", 0);
+
+
+						}
+						if (5 in del_options) {
+							//localStorage.setItem("tipEnabled",1);
+							tipEnabled = del_options[5].split(";");
+							localStorage.setItem("tipEnabled", tipEnabled[0]);
+
+							localStorage.setItem("tipId", tipEnabled[1]);
+							localStorage.setItem("tipPod", tipEnabled[2]);
+
+
+						} else {
+							localStorage.setItem("tip_prod", 0);
+							localStorage.setItem("tipEnabled", 0);
+
+
+						}
+						if (6 in del_options) {
+							localStorage.setItem("bookLink", del_options[6]);
+
+						} else {
+							localStorage.setItem("bookLink", 0);
+
+
+						}
+						try {
+							if (msg.branch[0].Id == "111")
+								$('#showMark').hide();
+						} catch (e) {
+						}
+						if (msg.branch.length == 1) {
+							listBranch = document.querySelector('#nearestBranch');
+							listBranch.innerText = "Order for delivery";
+						}
+						if (del_options[1] == 0) {
+							$('#nearestBranch').hide();
+							$('#startBranch').hide();
+							$('#hideSearch').hide();
+							$('#hideSearchRow').hide();
+
+						}
+
+						$('#setLogo').html('<img style="width:200px"  src="' + msg.misc.logo_url + '"/>');
+						if (msg.branch_id > 0 && load == 1)
+							loadPage('category.html');
+						if (msg.customer_id > 0) {
+							$('.loggedIn').show();
+							$('.loggedOut').hide();
+							whenLogin(true);
+							$("#usrName").html("Hey there, " + localStorage.getItem('loggedName'));
+							$("#RetuserName").html("asdsad");
+
+						} else {
+							$('.loggedIn').hide();
+							$('.loggedOut').show();
+							whenLogin(false);
+							$("#usrName").html("Welcome to Kanteen");
+							$("#RetuserName").html("");
+						}
+						var tableLink = "cordova.InAppBrowser.open('" + localStorage.getItem('bookLink') + "', '_blank', 'location=no,footer=yes')";
+
+						localStorage.setItem("allBranches", JSON.stringify(msg.branch));
+						listBranch = document.querySelector('#pokemon-list4');
+						listBranch.innerHTML = "";
+						if (localStorage.getItem("iconStart") == 0) {
+							hideIcon = "display:none";
+							$('.driverIcon').remove();
+						} else {
+							hideIcon = '';
+						}
+						fillBranches = document.querySelector('#fillBranches');
+						fillBranches.innerHTML = "";
+						msg.branch.forEach(name1 => {
+							if (del_options[0] == 1 && name1.is_online == 1 && del_options[2] == 1 && name1.is_table == 1)
+								// listBranch.appendChild(ons.createElement('<ons-row style="margin-top:5px"><ons-col style="width:50%"><img style="' + hideIcon + '" src="https://online.bb01.net/media/icon/take-away.png"> <ons-button  onclick="startBranch(' + name1.Id + ')" style="width:90%;color:#131414;background-color:#f2f2f2; !important">Click & collect <br>from ' + name1.name + '</ons-button></ons-col><ons-col style="width:50%"><img style="' + hideIcon + '"  src="https://online.bb01.net/media/icon/dining-table.png"> <ons-button  id="tableOrder' + name1.Id + '" onclick="startBranch(' + name1.Id + ',1)" style="color:#131414;background-color:#f2f2f2; !important;width:90%">Order at table<br> @ ' + name1.name + '</ons-button></ons-col></ons-row>'));
+								listBranch.appendChild(ons.createElement('<div class="d-flex justify-content-start"> <ons-button id="btnColl" onclick="startBranch(' + name1.Id + ')" style="margin:0px 10px 0px 0px; border-radius:20px; padding: 5px 15px;font-size: 16px;font-weight: 500;" class="activebtnOrd">COLLECTION </ons-button> <ons-button  id="tableOrder' + name1.Id + '" onclick="startBranch(' + name1.Id + ',1)" class="inactivebtnOrd" style="border-radius:20px; padding: 5px 15px;font-size: 16px;font-weight: 500;">TO MY TABLE</ons-button>'));
+
+							else if (del_options[2] == 1 && name1.is_table == 1)
+								listBranch.appendChild(ons.createElement('<p style="margin-top:5px"><img style="' + hideIcon + '"  src="https://online.bb01.net/media/icon/dining-table.png"> <ons-button id="tableOrder' + name1.Id + '" onclick="startBranch(' + name1.Id + ',1)" style="color:#131414;margin-top:5px;background-color:#f2f2f2; !important;width:50%">Order at table<br> @ ' + name1.name + '</ons-button></p>'));
+							else if (del_options[0] == 1 && name1.is_online == 1)
+								// listBranch.appendChild(ons.createElement('<p style="margin-top:5px"><img style="' + hideIcon + '"  src="https://online.bb01.net/media/icon/take-away.png"> <ons-button onclick="startBranch(' + name1.Id + ')" style="width:50%;color:#131414;background-color:#f2f2f2; !important">Click & collect <br>from ' + name1.name + '</ons-button></p>'));
+								listBranch.appendChild(ons.createElement('<p style="margin-top:5px"><img style="' + hideIcon + '"  src="https://online.bb01.net/media/icon/take-away.png"> <ons-button onclick="startBranch(' + name1.Id + ')" style="width:50%;color:#131414;background-color:#f2f2f2; !important">COLLECTION </ons-button></p>'));
+
+
+							fillBranches.appendChild(ons.createElement('<div><p>' + name1.name + '</p>' + '<p>' + name1.branch_address + '</p>' + '<p>' + name1.branch_phone + '</p></div>'));
+						})
+						fillBranches.appendChild(ons.createElement('<div><p>' + msg.email + '</p></div>'));
+
+						if (localStorage.getItem('bookLink') != '0') {
+							if (!(location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname == ""))
+								listBranch.appendChild(ons.createElement('<p><ons-button onclick="javascript:location.href=\'' + localStorage.getItem('bookLink') + '\'" style="color:var(--main-5);margin-top:5px;background-color:var(--main-2); !important;width:50%">Book a table</ons-button></p>'));
+							else
+								listBranch.appendChild(ons.createElement('<p><ons-button onclick="' + tableLink + '" style="color:var(--main-5);margin-top:5px;background-color:var(--main-2); !important;width:50%">Book a table</ons-button></p>'));
+
+						}
+
+						//	$('#dateSelect').val(msg.date);
+						localStorage.setItem("setCats", JSON.stringify(msg.allEnts));
+						toSelect = `<ons-row style="display:inline"><ons-select  style="color:white;width:50%" id="choose-table" class="getTable" >`;
+						toSelect += `<option value="noneSelected">Where are you seated?</option>`;
+						listBranch2 = document.querySelector('#tableList');
+						listBranch2.innerHTML = "";
+						msg.allEnts.forEach(cats => {
+							toSelect += `<option style="background-color:#222021;color:white" value="${cats.Id}">${cats.Name}</option>`;
+						})
+						toSelect += '</ons-select></ons-row>';
+						listBranch2.appendChild(ons.createElement(toSelect));
+						localStorage.setItem("allDays", JSON.stringify(msg.days3));
+
+						localStorage.setItem("collectDays", JSON.stringify(msg.days));
+						localStorage.setItem("deliveryDays", JSON.stringify(msg.days2));
+						let root = document.documentElement;
+						getColor = msg.misc.fourColours.split(",");
+						root.style.setProperty('--main-1', getColor[0]);
+						root.style.setProperty('--main-2', getColor[1]);
+						root.style.setProperty('--main-3', getColor[2]);
+						root.style.setProperty('--main-4', getColor[3]);
+						if (msg.misc.app_bg_home) {
+							$(".page__background").css("background-image", "url('" + msg.misc.app_bg_home + "')");
+							if (!(4 in getColor)) {
+								getColor[4] = '#ffffff';
+							}
+							//alert(colourTone(getColor[4]));
+							if (colourTone(getColor[4]) < 50) {
+								$('#startLogo').attr("src", "https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled3.svg");
+								$('#currBranch').css("color", "white");
+								$('#poweredText').css("color", "white");
+
+							}
+						}
+						else {
+
+							//alert(getColor[4]);
+							if (!(4 in getColor)) {
+								getColor[4] = '#ffffff';
+							}
+							if (!(5 in getColor))
+								getColor[5] = getColor[0];
+							// root.style.setProperty('--main-5', getColor[5]);
+							root.style.setProperty('--main-5', "#f0e9dd");
+
+
+							//alert(colourTone(getColor[4]));
+							if (colourTone(getColor[4]) < 50) {
+								$('#startLogo').attr("src", "https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled3.svg");
+								$('#currBranch').css("color", "white");
+
+
+
+							}
+
+							// $(".page__background").css("background", getColor[4]);
+							$(".page__background").css("background", "#f0e9dd");
+						}
+						if (localStorage.getItem("getBranch") > 0) {
+
+							$("#tableOrder" + localStorage.getItem("getBranch")).click();
+							localStorage.setItem("getBranch", 0);
+
+						}
+
+						if (msg.misc.app_l2_top_image) {
+							$('#homebgCenter').css('background-image', "url(https://live.bb01.net/back/uploads/" + data.product.image + ")");
+						} else {
+							$('#homebgCenter').css('background-image', "url(asset/img/home-bg.png)");
+						}
+
+						if (msg.misc.app_l2_bottom_image) {
+							$('#homebgBtn').css('background-image', "url('https://live.bb01.net/back/uploads/" + data.product.image + "')");
+						} else {
+							$('#homebgBtn').css('background-image', "url('asset/img/home-music.png')");
+						}
+
+						document.querySelector('#startModal').hide();
+
+						//Amit code
+						$("#appMsg").html(msg.app_message);
+
+						$("#appMsgtop").html(msg.app_message);
+
+						if (msg.app_message) {
+							$("#appCtn").html(msg.home_content);
+						}
+
+					});
+
+			$('#startBranch').val("");
+		}
+
+		ons.getScriptPage().onShow = function () {
+
+			$('#startBranch').val("");
+		}
+
+		function nextStep() {
+			$("#1-Step").css('display', 'none');
+			$("#2-Step").css('display', 'block');
+		}
+	</script>
+	<style>
+		.selectForms input {
+
+			color: var(--main-4);
+		}
+	</style>
+
+	<div class="" style="background:var(--main-5)">
+
+		<div class="container fixed-top" style="z-index: 10;">
+			<div style="display: flex;justify-content: space-between;/*! padding: 0px 20px; */">
+				<div
+					style="/*! padding: 0px 10px; */border: 1px solid white;border-radius: 0px 0px 30px 30px;background: white;">
+					<!-- <span style="font-size: 30px;">Kanteen</span> -->
+					<img src="asset/Logos/Kanteen/Kanteen Label.png" alt="" srcset="" style="width: 150px;"
+						onclick="goToStart()">
+				</div>
+				<div style="padding: 5px;">
+					<span>eat<b>POS</b></span>
+				</div>
+			</div>
+
+			<div>
+				<p style="font-size: 25px; font-weight: 500;" id="usrName" class="p-2 pt-3">Hi, Good morning</p>
+			</div>
+		</div>
+
+		<!-- <ons-toolbar style="background:var(--main-4);color:white">
+				<div class="left">
+					<ons-toolbar-button onclick="openMenu()">
+						<ons-icon icon="md-menu"></ons-icon>
+					</ons-toolbar-button>
+					<ons-back-button>Back</ons-back-button>
+				</div>
+				<div class="center" style="color:white">Start your order!</div>
+				<div class="right">
+				</div>
+			</ons-toolbar> -->
+
+		<div class="container" style="padding-top: 170px !important;">
+
+
+
+			<div id="homebgCenter"
+				style="background-color: rgb(204, 204, 204);background-position-x: center;background-position-y: center;background-repeat: no-repeat;background-attachment: scroll;	background-image: url('asset/img/home-bg.png');
+		background-size: cover;	background-origin: padding-box;	background-clip: border-box; /*! vertical-align: bottom !important; */ align-content: center;"
+				class="row  justify-content-center ">
+
+				<div class="row py-5"
+					style="width: 100%;background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0, 0, 0, 0.2)), color-stop(100%,rgba(0,0,0,0.9)));padding: 50px 5px !important;min-height: 40vh; align-content: center;">
+					<div class="col-12">
+						<div id="1-Step" style="display: block;">
+							<span style="font-size: 28px;font-weight: 500;padding: 20px 0px;color: white;"
+								id="appMsgtop">
+								<!-- Try our
+								new<br>Hot
+								Chocolate<br>with Cream -->
+							</span>
+							<div style="display: flex;justify-content: start;padding: 30px 0px;">
+								<!-- <button
+									style="background: #eac278;font-weight: 500; color: black !important;padding: 5px 20px;border: 1px solid #eac278;border-radius: 20px;font-size: 16px;"
+									onclick="nextStep()">ORDER NOW</button> -->
+								<ons-button onclick="nextStep()"
+									style="margin:0px 10px 0px 0px; border-radius:20px; padding: 5px 15px;font-size: 16px;font-weight: 500;"
+									class="activebtnOrd">ORDER NOW </ons-button>
+							</div>
+						</div>
+
+						<div id="2-Step" style="display: none;">
+
+							<span style="color:#fff; font-size:24px; font-weight: 500; padding-bottom:26px;">Would you
+								like
+								to order for
+								collection or to
+								your table?</span>
+
+							<div id=" setLogo" style="text-align: center; margin-top: 20px"></div>
+							<div id=" firstBranchForm" class="selectForms" style="width:100%;  margin-top: 0px">
+
+								<form autocomplete="off">
+									<ons-input
+										style="color:#f2ebdf;font-weight: 500;font-size: 15px;text-align: left;background: transparent;color: #f2ebdf;border: 2px solid #f2ebdf;border-width: 0px 0px 2px 0px;border-radius: 0px; margin: 0px 0px 10px 0px;;"
+										id="startBranch" placeholder="Postcode" modifier="underbar" autocomplete="off">
+									</ons-input>
+								</form>
+								<ons-row id="hideSearchRow">
+
+									<p style="width:100%">
+										<ons-button id="nearestBranch"
+											style="width:50%;background: #f2f2f2; color: black;border-radius: 20px;font-weight: 500;"
+											onclick="startBranch()"><img class="driverIcon"
+												src="https://online.bb01.net/media/icon/delivery-48.png"><br
+												class="driverIcon">Find
+											your
+											nearest branch</ons-button>
+										<ons-icon id="hideSearch" icon="fa-search" style="color:white"
+											onclick="findLoc()">
+										</ons-icon>
+									</p>
+								</ons-row>
+								<!-- <p style="color:var(--main-4);margin-top:0px" id="poweredText"> Powered by <a href="https://eatpos.co.uk"><img
+										src="https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled2.svg"
+										id="startLogo"></a></p> -->
+								<div style="text-align:left;width:100%" id="pokemon-list4"></div>
+								<div style="display: none;">
+									<ons-button
+										style="margin-top:10px; margin-top: 10px; background: #f2f2f2; color: black;border-radius: 20px;font-weight: 500;"
+										id="" class="loggedOut" onclick="loadPage('login.html')">
+										Login
+									</ons-button>
+									<ons-button
+										style="margin-top:10px; margin-top: 10px; background: #f2f2f2; color: black;border-radius: 20px;font-weight: 500;"
+										id="" class="loggedOut" onclick="loadPage('registration.html')">
+										Register
+									</ons-button>
+									<ons-button
+										style="margin-top:10px; margin-top: 10px; background: #f2f2f2; color: black;border-radius: 20px;font-weight: 500;"
+										id="registerButton" class="loggedIn" onclick="logout()">
+										Logout
+									</ons-button>
+								</div>
+							</div>
+
+							<div>
+								<div id="secondBranchForm" class="selectForms"
+									style="display:none;text-align: left; margin-top: 20px">
+
+									<h3 id="currBranch" style="font-size:14px; display: none;">
+									</h3>
+
+									<div id="onlineList" style="text-align: left;">
+
+										<ons-list>
+											<ons-list-item tappable id="hideCollection">
+												<label class="left">
+													<ons-radio onclick="checkSlots(0,1)" value="0" name="delOrCol"
+														id="collection" input-id="radio-1" checked></ons-radio>
+												</label>
+												<label for="radio-1" class="center">
+													Collection
+												</label>
+											</ons-list-item>
+											<ons-list-item tappable id="hideDelivery">
+												<label class="left">
+													<ons-radio name="delOrCol" value="1" onclick="checkSlots(1,1)"
+														id="delivery" input-id="radio-2"></ons-radio>
+												</label>
+												<label for="radio-2" class="center">
+													Delivery
+												</label>
+											</ons-list-item>
+
+										</ons-list>
+
+										<div style="display: block;">
+											<div style="max-width: 200px; margin-right: 10px;">
+												<span style="font-size: 18px; color:#fff;font-weight: 500;">When?</span>
+												<p id="dateSelect2">
+												</p>
+											</div>
+
+											<div style="margin-left: 0px;">
+												<span style="font-size: 18px; color:#fff;font-weight: 500;">What
+													time?</span>
+												<div id="timeBox" style="text-align: left;">
+
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div id="tableList1" style="text-align: left;">
+
+										<div id="tableList" style="text-align: left;">
+										</div>
+
+										<ons-button
+											style="margin-top:10px;border-radius:20px;/* background:#f2f2f2; *//* color:black; */color: #131414 !important;background-color: #eac278 !important;padding: 5px 15px;font-size: 16px;font-weight: 500;"
+											id="selectTableButton" class="bodyButton" onclick="checkTiming('x')">
+											CONFIRM
+										</ons-button>
+									</div>
+
+									<ons-list style="width:100%" id="pokemon-list3"></ons-list>
+								</div>
+
+							</div>
+
+						</div>
+
+					</div>
+				</div>
+
+
+
+
+			</div>
+
+			<div>
+				<div class="row">
+					<div class="col-6 p-3 pl-4">
+						<span style="font-size: 24px;font-weight: 500;" id="appMsg">This is a test</span><br>
+						<div style="width: 30px;">
+							<hr style="border-top: 2px solid #131414;">
+						</div>
+						
+						<!-- Just for testing... -->
+						<!-- <span class="toolbar-button toolbar-button--outline" onclick="loadPage('receipt1.html')"
+							style="margin:10px 25px; border-radius:20px; padding: 2px 15px;border-width: 0px;font-size: 16px;font-weight: 500;color: #131414 !important;	background-color: #eac278 !important;">
+							PAY CASH
+						</span> -->
+
+						<span style="font-size: 16px;font-weight: 300;line-height: 16px !important;" id="appCtn">If
+							you're visiting
+							Kanteen,
+							order directly to your table, so you can sit back and relax. <br> Otherwise, order ahead and
+							collect
+							from our dedicated counter.</span>
+
+
+
+					</div>
+					<div id="homebgBtn" class="col-6"
+						style="background-color: rgb(204, 204, 204);background-position-x: center;background-position-y: center;background-repeat: no-repeat;background-attachment: scroll;	background-image: url('asset/img/home-music.png');
+					background-size: cover;	background-origin: padding-box;	min-height: 37vh; background-clip: border-box; padding: 100px 10px !important;">
+
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+
+	</div>
+
+
+
+
+	<!-- <div id=" setLogo" style="text-align: center; margin-top: 20px"></div>
+	<div id=" firstBranchForm" class="selectForms" style="text-align: center; margin-top: 0px">
+
+		<form autocomplete="off">
+			<ons-input style="color:var(--main-4)" id="startBranch" placeholder="Postcode" modifier="underbar"
+				autocomplete="off"></ons-input>
+		</form>
+		<ons-row id="hideSearchRow">
+
+			<p style="width:100%">
+				<ons-button id="nearestBranch" style="width:50%" onclick="startBranch()"><img class="driverIcon"
+						src="https://online.bb01.net/media/icon/delivery-48.png"><br class="driverIcon">Find
+					your
+					nearest branch</ons-button>
+				<ons-icon id="hideSearch" icon="fa-search" style="color:var(--main-4);" onclick="findLoc()">
+				</ons-icon>
+			</p>
+		</ons-row>
+		<p style="color:var(--main-4);margin-top:0px" id="poweredText"> Powered by <a href="https://eatpos.co.uk"><img
+					src="https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled2.svg"
+					id="startLogo"></a></p>
+		<div style="text-align:center;width:100%" id="pokemon-list4"></div>
+		<ons-button style="margin-top:10px" id="" class="loggedOut" onclick="showLoginModal('loginModal')">
+			Login
+		</ons-button>
+		<ons-button style="margin-top:10px" i id="" class="loggedOut" onclick="showLoginModal('registerModal')">
+			Register
+		</ons-button>
+		<ons-button style="margin-top:10px" i id="registerButton" class="loggedIn" onclick="logout()">
+			Logout
+		</ons-button>
+	</div>
+	<div id="secondBranchForm" class="selectForms" style="display:none;text-align: center; margin-top: 20px">
+		<h3 id="currBranch">
+			</h2>
+			<div id="onlineList" style="text-align: center;">
+
+				<ons-list>
+					<ons-list-item tappable id="hideCollection">
+						<label class="left">
+							<ons-radio onclick="checkSlots(0,1)" value="0" name="delOrCol" id="collection"
+								input-id="radio-1" checked></ons-radio>
+						</label>
+						<label for="radio-1" class="center">
+							Collection
+						</label>
+					</ons-list-item>
+					<ons-list-item tappable id="hideDelivery">
+						<label class="left">
+							<ons-radio name="delOrCol" value="1" onclick="checkSlots(1,1)" id="delivery"
+								input-id="radio-2"></ons-radio>
+						</label>
+						<label for="radio-2" class="center">
+							Delivery
+						</label>
+					</ons-list-item>
+
+				</ons-list>
+
+				<p id="dateSelect2">
+				</p>
+				<div id="timeBox" style="text-align: center;">
+
+				</div>
+			</div>
+
+			<div id="tableList1" style="text-align: center;">
+
+				<div id="tableList" style="text-align: center;">
+				</div>
+
+				<ons-button style="margin-top:10px" id="selectTableButton" class="bodyButton"
+					onclick="checkTiming('x')">
+					CONFIRM
+				</ons-button>
+
+
+			</div>
+
+
+			<ons-list style="width:100%" id="pokemon-list3"></ons-list>
+
+	</div> -->
+
+	<ons-modal id="startModal" direction="up">
+
+		<div style="text-align: center">
+			<p>
+				<ons-icon icon="md-spinner" size="28px" spin></ons-icon> Loading...
+			</p>
+		</div>
+
+	</ons-modal>
+	<!--<div class="tabbar">
+	<label class="tabbar__item">
+	  <input type="radio" name="tabbar-a" checked="checked">
+	  <button class="tabbar__button">
+		<i class="tabbar__icon ion-ios-square"></i>
+		<div class="tabbar__label">One</div>
+	  </button>
+	</label>
+  
+	<label class="tabbar__item">
+	  <input type="radio" name="tabbar-a">
+	  <button class="tabbar__button">
+		<i class="tabbar__icon ion-ios-radio-button-on"></i>
+		<div class="tabbar__label">Two</div>
+	  </button>
+	</label>
+  
+	<label class="tabbar__item">
+	  <input type="radio" name="tabbar-a">
+	  <button class="tabbar__button">
+		<i class="tabbar__icon ion-ios-star"></i>
+		<div class="tabbar__label">Three</div>
+	  </button>
+	</label>
+  </div>-->
+	<!-- <ons-fab position="bottom center" onclick="loadPage('cart.html')"> -->
+	<!-- <ons-icon style="color:var(--main-2)" icon="fa-shopping-cart"></ons-icon> -->
+	<!-- <img src="asset/Icons/shopping bag.png" alt="" srcset="" style="height: 35px;padding: 0px 0px 5px 0px;">
+	</ons-fab> -->
+	<ons-bottom-toolbar>
+		<!-- <ons-row style="padding:10px">
+			<ons-col width="30%">
+				<ons-toolbar-button modifier="outline" id="showGoBack" style="font-size:16px;display:none;colour:white"
+					onclick="goToStart()">Restart order<ons-icon icon="fa-cutlery"></ons-icon>
+				</ons-toolbar-button>
+			</ons-col>
+			<ons-col width="30%"> </ons-col>
+			<ons-col width="40%"> Powered by <a href="https://eatpos.co.uk"><img width=50
+						src="https://d90ffuf2hvtld.cloudfront.net/wp-content/uploads/2018/11/untitled3.svg"></a>
+			</ons-col>
+		</ons-row> -->
+
+		<div class="tabbar">
+			<label class="tabbar__item" onclick="goToStart()">
+				<input type="radio" name="tabbar-a" checked="checked" id="homchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<img id="homeimg" src="asset/Icons/Home-Yellow.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px; color: #eac278 !important;">HOME</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('category.html')">
+				<input type="radio" name="tabbar-a" id="ordchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-mug-hot"></i> -->
+						<img id="ordimg" src="asset/Icons/Order - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ORDER</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('rewards.html')">
+				<input type="radio" name="tabbar-a" id="accchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="fas fa-gift"></i> -->
+						<img id="accimg" src="asset/Icons/Account - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">ACCOUNT</div>
+				</button>
+			</label>
+
+			<label class="tabbar__item" onclick="loadPage('other.html')">
+				<input type="radio" name="tabbar-a" id="otrchk">
+				<button class="tabbar__button">
+					<div class="tabbar__icon">
+						<!-- <i class="far fa-comments"></i> -->
+						<img id="otrimg" src="asset/Icons/Other - Black.png" alt="" srcset="" style="width:30px;">
+					</div>
+					<div class="tabbar__label" style="margin-top: 1px;">OTHER</div>
+				</button>
+			</label>
+		</div>
+
+	</ons-bottom-toolbar>
+
+</ons-page>
